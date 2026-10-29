@@ -1,0 +1,62 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.spc.local
+**/config/*.spc.local
+.claude/settings.local.json
+
+# Local dev-aid scripts (not shipped). CI-critical scripts live in ci/ (tracked).
+scripts/
+
+# Go
+*.plugin
+*.exe
+*.test
+*.out
+*.cover
+coverage.out
+vendor/
+go.work
+go.work.sum
+
+# Node (the Claude Code plugin skills reference npm tooling)
+node_modules/
+
+# Build output
+bin/
+dist/
+
+# Steampipe / Powerpipe local state
+.steampipe/
+.powerpipe/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+.directory
+.fuse_hidden*
+*~
+.nfs*
+
+# Editors
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.sublime-*
+.history/

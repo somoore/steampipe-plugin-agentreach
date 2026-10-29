@@ -1,0 +1,8 @@
+{
+  "name": "agentreach",
+  "version": "0.2.0",
+  "description": "Explains what your coding agent can reach and where it can send data, checks each agentreach finding against the real configuration, and helps fix confirmed ones with your approval. Skills only: no hooks, no MCP servers.",
+  "author": { "name": "somoore" },
+  "homepage": "https://github.com/somoore/steampipe-plugin-agentreach",
+  "license": "MIT"
+}

@@ -1,0 +1,47 @@
+name: claude-code-drift
+
+# agentreach encodes Claude Code's documented behaviour, so drift is a
+# standing risk and gets two weekly alarms:
+#   drift  auto mode's rule-drop list, read from the installed Claude Code
+#          at scan time with a built-in fallback; this job fails when the
+#          list cannot be read from the latest release, when the matcher's
+#          shape changed, or when the list differs from the fallback (then
+#          update builtinAutoDrop in pkg/posture/autodrop.go).
+#   docs  the documents the behaviour model cites (ci/docs-baseline.sha256);
+#          this job fails when any page's content hash changed (then
+#          re-verify pkg/posture against it, bump ModelBasis* in
+#          modelbasis.go, and run make docs-baseline).
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      # @latest is deliberate: this job exists to notice when a NEW Claude
+      # Code release changes the drop list. --ignore-scripts keeps the
+      # package's install scripts from running; nothing but the version
+      # number and the cli.js bytes are read.
+      - name: Install the latest Claude Code (no install scripts)
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund --prefix "$RUNNER_TEMP/cc" @anthropic-ai/claude-code@latest
+          node -p "require('$RUNNER_TEMP/cc/node_modules/@anthropic-ai/claude-code/package.json').version"
+      - name: Compare the drop list
+        run: make check-claude-code CLAUDE="$RUNNER_TEMP/cc/node_modules"
+
+  docs:
+    name: cited documents unchanged
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Hash the documents the behaviour model cites
+        run: ./ci/docs_drift.sh

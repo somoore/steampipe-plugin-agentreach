@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: build + standards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0 # gitleaks scans the whole history
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # make test = gofmt check + go vet + standards tests + unit tests.
+      # Unit tests use fixtures only; nothing probes the runner's home.
+      - name: make test
+        run: make test
+
+      - name: build plugin
+        run: go build -tags netgo ./...
+
+      # The mod's test/snapshots are generated on macOS; the generator pins
+      # the platform, so two Linux runs must match each other byte for byte.
+      # (The mod's CI regenerates on Linux and diffs against its copy.)
+      - name: fixtures are deterministic
+        run: |
+          go run ./cmd/agentreach-fixtures -out "$RUNNER_TEMP/fx1" >/dev/null
+          go run ./cmd/agentreach-fixtures -out "$RUNNER_TEMP/fx2" >/dev/null
+          diff -r "$RUNNER_TEMP/fx1" "$RUNNER_TEMP/fx2"
+
+      - name: install gitleaks
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          curl -fsSLo /tmp/gl.tgz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  /tmp/gl.tgz" | sha256sum -c -
+          sudo tar -xzf /tmp/gl.tgz -C /usr/local/bin gitleaks
+
+      - name: secret scan
+        env:
+          AGENTREACH_GITLEAKS_REQUIRED: "1"
+        run: ./ci/secrets.sh
+
+  # Observed mode against a real srt on Linux, where srt hides a denied
+  # directory by mounting an empty one over it (bubblewrap). macOS uses
+  # Seatbelt and fails the read instead, so both platforms need covering.
+  observed-srt-linux:
+    name: observed mode (srt, Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: install srt 0.0.81 and its Linux dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq bubblewrap socat ripgrep
+          # Ubuntu 24.04 blocks unprivileged user namespaces, which bwrap needs.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+          npm install -g --ignore-scripts @anthropic-ai/sandbox-runtime@0.0.81
+          srt --version
+
+      - name: make test-srt
+        run: make test-srt SRT="$(command -v srt)"
