@@ -144,6 +144,8 @@ func (c *ccCollector) observe(ctx context.Context) {
 	}
 	version := "srt"
 	vctx, vcancel := context.WithTimeout(ctx, 10*time.Second)
+	// #nosec G204 -- srt is the user-supplied sandbox runtime path in
+	// opt-in observe mode, with a fixed argument.
 	if out, err := exec.CommandContext(vctx, srt, "--version").Output(); err == nil {
 		version = "srt " + strings.TrimSpace(string(out))
 	}
@@ -193,6 +195,9 @@ func (c *ccCollector) observe(ctx context.Context) {
 	}
 	cctx, cancel := context.WithTimeout(ctx, 90*time.Second)
 	defer cancel()
+	// #nosec G204 -- srt is the user-supplied sandbox runtime path in
+	// opt-in observe mode, and args are built here from the effective
+	// settings, never from configuration text.
 	cmd := exec.CommandContext(cctx, srt, args...)
 	cmd.Dir = dir
 	var out bytes.Buffer

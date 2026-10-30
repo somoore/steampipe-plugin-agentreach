@@ -108,7 +108,7 @@ func launchFlagsFromStartupFiles(home string) []LaunchFlag {
 				}
 			}
 		}
-		f.Close()
+		_ = f.Close()
 	}
 	return out
 }

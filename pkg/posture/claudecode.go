@@ -2,7 +2,7 @@ package posture
 
 import (
 	"context"
-	"crypto/sha1"
+	"crypto/sha1" // #nosec G505 -- git's object id format for SHA-1 repositories; recomputed to compare against ls-tree ids, never a security decision
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -209,6 +209,8 @@ func (c *ccCollector) detectBinary(ctx context.Context) {
 	c.binaryPath = p
 	cctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
+	// #nosec G204 -- a version probe of the installed Claude Code binary found on this machine, with
+	// a fixed argument and a five-second timeout.
 	if out, err := exec.CommandContext(cctx, p, "--version").Output(); err == nil {
 		if f := strings.Fields(string(out)); len(f) > 0 {
 			c.version = f[0]
@@ -1170,6 +1172,9 @@ func gitBlobID(b []byte, idLen int) string {
 		h.Write(b)
 		return hex.EncodeToString(h.Sum(nil))
 	}
+	// #nosec G401 -- SHA-1 is git's own object id format for these
+	// repositories; we recompute it to compare against ls-tree ids. It is
+	// not used for any security decision.
 	h := sha1.New()
 	h.Write([]byte(hdr))
 	h.Write(b)

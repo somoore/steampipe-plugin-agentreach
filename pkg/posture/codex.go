@@ -68,6 +68,8 @@ func collectCodex(ctx context.Context, opts Options, snap *Snapshot) {
 		if p, err := exec.LookPath("codex"); err == nil {
 			a.BinaryPath = p
 			cctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+			// #nosec G204 -- a version probe of the installed Codex binary found on this machine, with
+			// a fixed argument and a five-second timeout.
 			if out, err := exec.CommandContext(cctx, p, "--version").Output(); err == nil {
 				if f := strings.Fields(string(out)); len(f) > 0 {
 					a.Version = f[len(f)-1]

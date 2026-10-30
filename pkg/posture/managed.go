@@ -145,6 +145,9 @@ func readPlistJSON(ctx context.Context, path string) (map[string]any, error) {
 	}
 	cctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
+	// #nosec G204 -- plutil with fixed arguments; the path comes from
+	// Options.PlistPath (the managed-preferences location), never from
+	// repository content.
 	out, err := exec.CommandContext(cctx, "plutil", "-convert", "json", "-o", "-", path).Output()
 	if err != nil {
 		return nil, err

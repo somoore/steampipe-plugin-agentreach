@@ -98,6 +98,9 @@ func gitCmd(args ...string) *exec.Cmd {
 		"-c", "core.pager=cat",
 		"-c", "credential.helper=",
 	}
+	// #nosec G702 G204 -- args come only from the fixed call sites in
+	// this package: subcommands are constants and file paths are passed
+	// after "--" or as option values. No shell is involved.
 	cmd := exec.Command("git", append(base, args...)...)
 	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0", "GIT_PAGER=cat", "GIT_OPTIONAL_LOCKS=0")
 	return cmd

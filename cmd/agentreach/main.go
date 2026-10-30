@@ -156,7 +156,7 @@ func writeFile(path string, fn func(io.Writer) error) error {
 		return err
 	}
 	if err := fn(f); err != nil {
-		f.Close()
+		_ = f.Close()
 		return err
 	}
 	return errors.Join(f.Close())

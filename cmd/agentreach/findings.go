@@ -15,10 +15,10 @@ import (
 const (
 	rulePathConf      = "AgentReach-PATH-CONF"
 	rulePathIntegrity = "AgentReach-PATH-INTEGRITY"
-	ruleInlineSecret  = "AgentReach-MCP-INLINE-SECRET"
-	ruleNotAssessed   = "AgentReach-NOT-ASSESSED"
+	ruleInlineSecret  = "AgentReach-MCP-INLINE-SECRET" // #nosec G101 -- a rule identifier for the report, not a credential
+	ruleNotAssessed   = "AgentReach-NOT-ASSESSED"      // #nosec G101 -- a rule identifier for the report, not a credential
 	ruleCIAgent       = "AgentReach-CI-AGENT"
-	ruleSDKBypass     = "AgentReach-SDK-BYPASS"
+	ruleSDKBypass     = "AgentReach-SDK-BYPASS" // #nosec G101 -- a rule identifier for the report, not a credential
 )
 
 const docsBase = "https://github.com/somoore/steampipe-mod-agentreach-compliance/blob/main/"

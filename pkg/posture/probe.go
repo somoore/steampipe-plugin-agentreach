@@ -24,7 +24,7 @@ func probeReadable(p string, isDir bool) *bool {
 		if err == nil {
 			var one [1]byte
 			_, rerr := f.Read(one[:])
-			f.Close()
+			_ = f.Close()
 			ok = rerr == nil || rerr.Error() == "EOF"
 		}
 	}
@@ -36,7 +36,7 @@ func probeTCP(addr string, timeout time.Duration) *bool {
 	c, err := net.DialTimeout("tcp", addr, timeout)
 	ok := err == nil
 	if ok {
-		c.Close()
+		_ = c.Close()
 	}
 	return &ok
 }
@@ -51,7 +51,7 @@ func probeUnix(p string, timeout time.Duration) *bool {
 	c, err := net.DialTimeout("unix", p, timeout)
 	ok := err == nil
 	if ok {
-		c.Close()
+		_ = c.Close()
 	}
 	return &ok
 }

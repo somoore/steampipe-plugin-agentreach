@@ -79,7 +79,9 @@ func (c *ccCollector) ingestPluginMCP(root, plugin, projectDir string, enabled *
 // agents recursively.
 func (c *ccCollector) addTree(scope, projectDir, dir, suffix, kind, plugin string) {
 	var found []string
-	filepath.WalkDir(dir, func(p string, d os.DirEntry, err error) error {
+	// The callback swallows per-entry errors by design: an unreadable
+	// directory yields no files, which is the correct scanner result.
+	_ = filepath.WalkDir(dir, func(p string, d os.DirEntry, err error) error {
 		if err != nil {
 			return nil
 		}

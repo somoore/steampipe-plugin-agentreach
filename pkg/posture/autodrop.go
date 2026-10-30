@@ -172,6 +172,8 @@ func parseAutoDrop(data []byte, at int) ([]string, bool) {
 	}
 	// Follow arrays that spread this one, up to three levels.
 	name := ""
+	// #nosec G602 -- open is a bytes.Index result into data, so
+	// 0 <= open < len(data) and both slices below are in bounds.
 	if open > 0 && data[open-1] == '=' {
 		name = jsIdent.FindString(string(data[max(0, open-64) : open-1]))
 	}

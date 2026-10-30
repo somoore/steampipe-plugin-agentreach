@@ -1,7 +1,7 @@
 STEAMPIPE_INSTALL_DIR ?= ~/.steampipe
 BUILD_TAGS = netgo
 
-.PHONY: install build test test-srt fmt vet hooks snapshot cli secrets check-claude-code docs-drift docs-baseline
+.PHONY: install build test test-srt fmt vet hooks snapshot cli secrets check-claude-code docs-drift docs-baseline security
 
 install:
 	go build -o $(STEAMPIPE_INSTALL_DIR)/plugins/local/agentreach/agentreach.plugin -tags "$(BUILD_TAGS)" *.go
@@ -65,3 +65,21 @@ docs-drift:
 # changed docs and bumping ModelBasis* in pkg/posture/modelbasis.go.
 docs-baseline:
 	./ci/docs_drift.sh --update
+
+# Security scan: dependency vulnerabilities (govulncheck) and the gosec
+# linter over the collector, CLI and plugin layer. Versions are pinned.
+#
+# gosec exclusions, deliberate and reviewed:
+#   G304/G703 (file inclusion / path traversal via a variable): reading
+#   agent configuration at discovered paths is the product. The collector
+#   is read-only: it never writes to a discovered path, never dials a host
+#   that came from configuration (network probes target the local listener
+#   table only, wildcard binds normalized to 127.0.0.1), and never stores
+#   file contents: names, sizes, booleans and redacted text only.
+# Site-level exceptions carry a #nosec comment where they apply.
+GOSEC_VERSION ?= v2.30.0
+GOVULN_VERSION ?= v1.9.0
+security:
+	go run github.com/securego/gosec/v2/cmd/gosec@$(GOSEC_VERSION) -quiet -tests=false \
+	  -exclude=G304,G703 ./pkg/posture/... ./agentreach/... ./cmd/agentreach/...
+	go run golang.org/x/vuln/cmd/govulncheck@$(GOVULN_VERSION) ./...

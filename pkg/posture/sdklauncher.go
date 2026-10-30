@@ -190,6 +190,9 @@ func scanSDKBase(root, base string) []SDKLauncher {
 		if fi, err := d.Info(); err != nil || fi.Size() > sdkMaxFileBytes {
 			return nil
 		}
+		// #nosec G122 -- a read-only scan of source files; the only
+		// effect of a swapped path would be reading a different local
+		// file's bytes, which never leave this process unredacted.
 		b, err := os.ReadFile(p)
 		if err != nil {
 			return nil
