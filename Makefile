@@ -1,7 +1,7 @@
 STEAMPIPE_INSTALL_DIR ?= ~/.steampipe
 BUILD_TAGS = netgo
 
-.PHONY: install build test test-srt fmt vet hooks snapshot cli secrets check-claude-code docs-drift docs-baseline security
+.PHONY: install build test test-srt fmt vet hooks snapshot cli secrets check-claude-code docs-drift docs-baseline security live-check live-check-install live-check-uninstall
 
 install:
 	go build -o $(STEAMPIPE_INSTALL_DIR)/plugins/local/agentreach/agentreach.plugin -tags "$(BUILD_TAGS)" *.go
@@ -62,7 +62,7 @@ docs-drift:
 	./ci/docs_drift.sh
 
 # Refresh the cited-document hashes after re-verifying the model against
-# changed docs and bumping ModelBasis* in pkg/posture/modelbasis.go.
+# changed docs.
 docs-baseline:
 	./ci/docs_drift.sh --update
 
@@ -83,3 +83,16 @@ security:
 	go run github.com/securego/gosec/v2/cmd/gosec@$(GOSEC_VERSION) -quiet -tests=false \
 	  -exclude=G304,G703 ./pkg/posture/... ./agentreach/... ./cmd/agentreach/...
 	go run golang.org/x/vuln/cmd/govulncheck@$(GOVULN_VERSION) ./...
+
+# Live check: scan this machine with the installed release, keep a dated
+# report and print what changed since the previous run. Fixtures prove the
+# model; this catches a new agent release that changed behaviour.
+live-check:
+	./tools/live-check.sh
+
+# Schedule it monthly with launchd (first of the month, 09:17).
+live-check-install:
+	./tools/install-live-check.sh
+
+live-check-uninstall:
+	./tools/install-live-check.sh --uninstall

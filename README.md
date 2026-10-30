@@ -118,7 +118,7 @@ make security  # gosec and govulncheck at pinned versions
 make snapshot  # JSON dump of the collector, no Steampipe needed
 ```
 
-The collector's model of each agent is tested against 19 fixture machines, and CI watches the vendor documentation for drift. Security issues go through **Security > Report a vulnerability**, never a public issue. See CONTRIBUTING.md and SECURITY.md.
+The collector's model of each agent is tested against 19 fixture machines, and CI watches the vendor documentation for drift. Fixtures prove the model; a live scan catches what they cannot. `make live-check` scans this machine with the installed release and reports what changed since the previous run, and `make live-check-install` schedules it monthly. [docs/live-check.md](docs/live-check.md) has the details. Security issues go through **Security > Report a vulnerability**, never a public issue. See CONTRIBUTING.md and SECURITY.md.
 
 ## License
 
