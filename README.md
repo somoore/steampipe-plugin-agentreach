@@ -2,9 +2,23 @@
 
 Query what your AI coding agent can actually reach on your machine, with SQL.
 
+## Supported agents
+
+Discovery is automatic: an agent that is not installed produces no rows at all.
+
+| Agent | Coverage | Verified against |
+|-------|----------|------------------|
+| Claude Code | Full: settings, hooks, MCP, plugins, skills, sandbox, permission rules, CI workflows, launch flags, attack paths | 2.1.312 |
+| Codex | Full: config, sandbox, approval policy, MCP, hooks, skills, plugins, write targets, attack paths | 0.155.1 |
+| OpenCode | Config, permission gates (v1 and v2 formats), MCP, instruction files, agents | 2.2.1 |
+| Cline | Config, MCP, rules and instruction files; approval gates honestly unknown (stored in app state we cannot read) | current docs |
+| Grok Build | Config, permission modes and rules, sandbox profiles, MCP, instruction files | current docs |
+
+Every table has an `agent` column. The [compliance mod](https://github.com/somoore/steampipe-mod-agentreach-compliance) judges the Claude Code rows; the other agents are inventory.
+
 ## What it does
 
-agentreach is a read-only security scanner for AI coding agents. It finds every agent you have installed (Claude Code, Codex, OpenCode, Cline and Grok Build), reads its configuration, and answers one question: if a malicious instruction reached your agent, what could it actually do?
+agentreach is a read-only security scanner for AI coding agents. It reads each agent's configuration and answers one question: if a malicious instruction reached your agent, what could it actually do?
 
 It never runs your agent, never changes anything, and never stores a secret value. A machine with no coding agent installed is a clean result.
 
@@ -34,13 +48,11 @@ from agentreach_reach_file
 where agent = 'claude_code';
 ```
 
-Every table has an `agent` column. The [compliance mod](https://github.com/somoore/steampipe-mod-agentreach-compliance) judges the Claude Code rows; the other agents are inventory.
-
 ## Tables
 
 | Table | One row per |
 |-------|-------------|
-| `agentreach_agent` | installed agent: version, permission mode, sandbox state |
+| `agentreach_agent` | installed agent: version, permission mode, sandbox state, ACP harness |
 | `agentreach_project` | project the agent has worked in, with its trust decision |
 | `agentreach_setting` | settings key at every scope |
 | `agentreach_hook` | command that runs on a lifecycle event |
@@ -66,6 +78,7 @@ Table docs and examples are in [docs/tables](docs/tables).
 - Every fact carries an evidence type: `configured` (read from a settings file), `observed` (an inert probe saw it), `inferred` (derived from both), or `unknown`.
 - A false is a fact. A null means unknown or unrestricted, never safe.
 - `agentreach_agent.model_basis` names the release each agent's behaviour model was verified against. If your install is newer, the scan tells you its findings may lag.
+- `agentreach_agent.acp_harness` names the editor Agent Client Protocol servers that can start each agent, whose options are not visible to the scan.
 - Not collected: content that only loads at run time, remote config, and the newer agents' plugin and skill directories.
 
 ## Security promises
@@ -78,6 +91,7 @@ Table docs and examples are in [docs/tables](docs/tables).
 
 ```bash
 make test      # gofmt, vet, go mod verify, standards + unit tests
+make security  # gosec + govulncheck at pinned versions
 make snapshot  # JSON dump of the collector, no Steampipe needed
 ```
 
