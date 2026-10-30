@@ -4,7 +4,7 @@ All notable changes to this plugin are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## v0.2.0 - 2026-10-30
 
 ### Fixed
 
@@ -84,32 +84,31 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     permissions rule array (last match wins, allow-all base policy, shell
     and subagent action names) - permission rules as sandbox_rule rows,
     MCP servers, AGENTS.md, markdown agents and the instructions list.
-    Verified against 2.2.1, with a v-prefixed version string tolerated.
+    Verified on a live v2 install; the version string is normalised either
+    way.
   - Grok Build (docs.x.ai/build): user/project/managed/requirements TOML
     layers, permission_mode (ask/auto/always-approve, legacy approval_mode
     and yolo) modelled to gates, [permission] allow/deny rules as rows,
     sandbox profiles (off/workspace/devbox/read-only/strict with the
-    Linux-only network note), MCP servers, AGENTS.md. Early beta: no
-    release pin, the docs drift alarm watches the pages.
+    Linux-only network note), MCP servers, AGENTS.md. Early beta: the docs
+    drift alarm watches the pages.
   - Cline (docs.cline.bot): the ~/.cline tree and VS Code extension
     surface, global settings (secrets skipped), MCP servers from every
     copy, rules (.cline/rules, .clinerules, ~/Documents/Cline/Rules,
     AGENTS.md) with git provenance. Approval gates are honestly unknown:
     auto-approve and YOLO mode live in app state agentreach cannot read.
-- Drift is now measured, not assumed. `agentreach_agent.model_basis` and
-  `model_basis_stale` name the Claude Code (2.1.312) and Codex CLI (0.155.1)
-  releases the behaviour model was verified against and flag an installed
-  agent that is newer, so a scan says when findings may lag instead of
-  passing silently; the CLI repeats it as an assumption line and
-  `agentreach version` prints the bases. `ci/docs_drift.sh`
-  (`make docs-drift`) fails when any cited Claude Code document's content
-  hash changed since `ci/docs-baseline.sha256` (`make docs-baseline`
-  refreshes it after re-verification), and the weekly claude-code-drift
-  workflow runs it beside the auto-mode drop-list check.
+- Drift is measured, not assumed. The collector reads version-dependent
+  behaviour from the installed release where it can (auto mode's rule-drop
+  list), and `ci/docs_drift.sh` (`make docs-drift`) fails when any cited
+  vendor document's content hash changed since `ci/docs-baseline.sha256`
+  (`make docs-baseline` refreshes it after re-verification). No release is
+  pinned: a construct the model cannot interpret comes back unknown or not
+  assessed, never guessed. The weekly claude-code-drift workflow runs the
+  drop-list check beside it.
 
-## v0.2.0 - 2026-10-29
+### Earlier in this release (2026-10-29)
 
-### Renamed
+#### Renamed
 
 - The project is now **agentreach** (formerly casf, the "Coding Agent
   Security Framework" placeholder): tables are `agentreach_*`, the CLI is
@@ -122,7 +121,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   connection and its `plugin` key). Snapshot JSON is unchanged apart from
   prose that named the tool.
 
-### Added
+#### Added
 
 - Fixture fx-managed: the first fixture home with managed settings, so the
   mod's `managed_only_sql` hardening template gets its ok branch
@@ -276,7 +275,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   same snapshots on any build machine; CI generates them twice and diffs.
   New fixtures fx-services, fx-strict-services, fx-project and fx-unknown.
 
-### Changed
+#### Changed
 
 - Steampipe Plugin SDK v6.1.0 (requires Go 1.26).
 - Credential-shaped text is redacted on every surface (hook commands, URLs and

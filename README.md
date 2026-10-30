@@ -2,6 +2,46 @@
 
 Query what your AI coding agent can actually reach on your machine, with SQL.
 
+agentreach is a read-only security scanner for AI coding agents. It reads each agent's configuration and answers one question: if a malicious instruction reached your agent, what could it actually do?
+
+One collector backs three things:
+
+- a CLI that prints text, JSON or SARIF
+- 18 SQL tables through a [Steampipe](https://steampipe.io) plugin
+- a [Powerpipe](https://powerpipe.io) compliance mod with 112 controls
+
+## Quick start
+
+```bash
+go install github.com/somoore/steampipe-plugin-agentreach/cmd/agentreach@latest
+agentreach scan
+```
+
+Prebuilt binaries for macOS and Linux on arm64 and amd64 are on [Releases](https://github.com/somoore/steampipe-plugin-agentreach/releases). Verify them against `checksums.txt`.
+
+A condensed run on a developer laptop:
+
+```text
+Agents found: claude_code 2.1.314, codex 0.155.1
+
+Candidate paths by approval: none 4, classifier 2, prompt 0, unknown 0
+Failing findings (fail-on auto): 4 of 6
+
+Failing paths, one line per file (worst first):
+  Claude Code: ~/.ssh can be read and sent out: 4 path(s) from 2 source(s), through 3 exit(s), nothing asks you
+    e.g. ~/work/app/CLAUDE.md (instruction_file) can make the agent read ~/.ssh by shell and send it out through plugin hooks, and no step asks you first.
+```
+
+`agentreach scan` exits 0 (clean), 1 (failing findings) or 2 (not fully assessed). `--format json` gives the whole snapshot, `--format sarif` is for GitHub code scanning, and `--no-probe` skips the network and file probes.
+
+## What it does
+
+It reads configuration, permission rules, hooks, MCP servers, plugins, CI workflows and project history. It does not start a session or send a prompt.
+
+- **Gates.** For each step it models what actually stops the command: no gate, a classifier, a human prompt, or an enforced sandbox.
+- **Attack paths.** It joins an untrusted source (an instruction file, a web page, an MCP server) to a private file and to an exit (the internet, a socket, a hook), and reports the strongest gate on the way.
+- **Evidence.** Every fact says whether it is `configured`, `observed`, `inferred` or `unknown`. A `null` means unknown or unrestricted, never safe.
+
 ## Supported agents
 
 Discovery is automatic: an agent that is not installed produces no rows at all.
@@ -16,21 +56,7 @@ Discovery is automatic: an agent that is not installed produces no rows at all.
 
 Every table has an `agent` column. The [compliance mod](https://github.com/somoore/steampipe-mod-agentreach-compliance) judges the Claude Code rows; the other agents are inventory.
 
-## What it does
-
-agentreach is a read-only security scanner for AI coding agents. It reads each agent's configuration and answers one question: if a malicious instruction reached your agent, what could it actually do?
-
-It never starts a session, never sends a prompt, never writes your configuration, and never stores a secret value. It does run each agent's `--version` to report the installed release, and some agents create their own state directory the first time that happens. A machine with no coding agent installed is a clean result.
-
-One collector backs three things:
-
-- 18 SQL tables through a [Steampipe](https://steampipe.io) plugin
-- A CLI: `agentreach scan` prints text, JSON or SARIF, and exits 0 (clean), 1 (failing findings) or 2 (not fully assessed)
-- A skill-only Claude Code plugin so the agent can help you fix what the scan finds
-
-## Install
-
-Requires Go 1.26 and Steampipe.
+## Use it as a Steampipe plugin
 
 ```bash
 brew install turbot/tap/steampipe
@@ -40,7 +66,7 @@ cp config/agentreach.spc ~/.steampipe/config/agentreach.spc
 steampipe service start
 ```
 
-Ask it a question:
+The plugin is not on the Steampipe Hub yet, so install from source for now. Then query it:
 
 ```sql
 select category, path, reachable_via_bash
@@ -73,13 +99,19 @@ where agent = 'claude_code';
 
 Table docs and examples are in [docs/tables](docs/tables).
 
-## How to read a result
+## In CI
 
-- Every fact carries an evidence type: `configured` (read from a settings file), `observed` (an inert probe saw it), `inferred` (derived from both), or `unknown`.
-- A false is a fact. A null means unknown or unrestricted, never safe.
-- `agentreach_agent.version` is whatever the installed binary reports. Nothing is pinned to a release: agents ship continuously, so a construct the model cannot interpret comes back `unknown` or not assessed instead of being guessed.
-- `agentreach_agent.acp_harness` names the editor Agent Client Protocol servers that can start each agent, whose options are not visible to the scan.
-- Not collected: content that only loads at run time, remote config, and the newer agents' plugin and skill directories.
+The repository ships a composite action that downloads a verified binary, scans the runner and uploads SARIF to code scanning.
+
+```yaml
+permissions:
+  contents: read
+  security-events: write
+steps:
+  - uses: somoore/steampipe-plugin-agentreach@v0.2.0
+```
+
+A GitHub-hosted runner has no agent installed, so the scan is clean there. Use a self-hosted runner, or install the agent first. [docs/ci.md](docs/ci.md) has the inputs and a plain shell recipe.
 
 ## Security promises
 
@@ -90,12 +122,12 @@ Table docs and examples are in [docs/tables](docs/tables).
 ## Development
 
 ```bash
-make test      # gofmt, vet, go mod verify, standards + unit tests
-make security  # gosec + govulncheck at pinned versions
+make test      # gofmt, vet, go mod verify, standards and unit tests
+make security  # gosec and govulncheck at pinned versions
 make snapshot  # JSON dump of the collector, no Steampipe needed
 ```
 
-Publishing to the Steampipe Hub needs a Turbot account and a pull request to the hub repository; until then install from source as above. Security issues go through **Security > Report a vulnerability**, never a public issue. See CONTRIBUTING.md and SECURITY.md.
+The collector's model of each agent is tested against 19 fixture machines, and CI watches the vendor documentation for drift. Security issues go through **Security > Report a vulnerability**, never a public issue. See CONTRIBUTING.md and SECURITY.md.
 
 ## License
 

@@ -1,0 +1,26 @@
+# Example: run agentreach on every pull request and upload the SARIF report.
+# Copy this to .github/workflows/agentreach.yml.
+#
+# A GitHub-hosted runner has no coding agent installed, so the scan finds
+# nothing and exits 0. This is useful on a self-hosted runner, or a job that
+# installs the agent before the scan. To scan a project directory instead,
+# pass it through args.
+name: agentreach
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write # required by upload-sarif
+
+jobs:
+  posture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: somoore/steampipe-plugin-agentreach@v0.2.0
+        with:
+          fail-on: auto # auto, classifier, prompt or never

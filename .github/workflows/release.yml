@@ -1,0 +1,51 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+# Builds the CLI for the four supported platforms and attaches the tarballs
+# plus checksums to the tag's GitHub release. Only GitHub-owned actions are
+# used, matching the repository's Actions allowlist.
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: build the four supported platforms
+        run: |
+          set -euo pipefail
+          ver="${GITHUB_REF_NAME#v}"
+          mkdir -p dist
+          for os in darwin linux; do
+            for arch in arm64 amd64; do
+              name="agentreach_${ver}_${os}_${arch}"
+              stage="$(mktemp -d)"
+              CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" \
+                go build -trimpath -ldflags="-s -w" -o "$stage/agentreach" ./cmd/agentreach
+              cp README.md LICENSE "$stage/"
+              tar -C "$stage" -czf "dist/${name}.tar.gz" agentreach README.md LICENSE
+              rm -rf "$stage"
+            done
+          done
+          cd dist
+          sha256sum ./*.tar.gz >checksums.txt
+          cat checksums.txt
+
+      - name: publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/*.tar.gz dist/checksums.txt \
+            --verify-tag --title "$GITHUB_REF_NAME" --generate-notes
