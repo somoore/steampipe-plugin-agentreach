@@ -1,8 +1,9 @@
 # Run agentreach in CI
 
 agentreach is a composite action. It downloads a release binary, verifies its
-checksum, scans the runner, uploads the SARIF report to GitHub code scanning,
-and then fails the step with agentreach's own exit code.
+checksum and GitHub build provenance, scans the runner, uploads the SARIF
+report to GitHub code scanning, and then fails the step with agentreach's own
+exit code.
 
 ```yaml
 permissions:
@@ -75,3 +76,10 @@ CLI, which checks that this repository's release workflow built the file:
 gh attestation verify agentreach_0.2.0_linux_amd64.tar.gz \
   --repo somoore/steampipe-plugin-agentreach
 ```
+
+## Releases are immutable
+
+A published tag is never re-uploaded. A change gets a new patch tag and a new
+release. Re-uploading an asset under an existing tag can be served stale by
+GitHub's CDN, and it breaks the assumption that a version identifies one set
+of bytes.
