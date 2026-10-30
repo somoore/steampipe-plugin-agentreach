@@ -34,7 +34,7 @@ runs:
         AGENTREACH_FAIL_ON: ${{ inputs.fail-on }}
         AGENTREACH_ARGS: ${{ inputs.args }}
       run: |
-        set -uo pipefail
+        set -euo pipefail
         ver="${AGENTREACH_VERSION#v}"
         os="$(uname -s | tr '[:upper:]' '[:lower:]')"
         case "$(uname -m)" in
