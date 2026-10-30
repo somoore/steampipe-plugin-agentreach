@@ -104,9 +104,15 @@ func collectGrok(ctx context.Context, opts Options, snap *Snapshot) {
 	add("requirements", filepath.Join(dir, "requirements.toml"))
 	add("managed", filepath.Join(dir, "managed_config.toml"))
 	add("user", filepath.Join(dir, "config.toml"))
+	userCfg := filepath.Join(dir, "config.toml")
 	projects := projectRoots(opts, snap)
 	for _, p := range projects {
 		path := filepath.Join(p, ".grok", "config.toml")
+		// The home directory is often a registered project; its .grok is
+		// the user layer, already read above, not a project layer.
+		if path == userCfg {
+			continue
+		}
 		cfg, _ := readAgentTOML(path, &a, snap, AgentGrok)
 		if cfg != nil {
 			layers = append(layers, glayer{"project", path, cfg})

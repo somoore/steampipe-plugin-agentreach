@@ -287,6 +287,33 @@ func TestOpenCodeV2BasePolicyAllows(t *testing.T) {
 	}
 }
 
+// The home directory is often a registered project; its .grok/config.toml
+// is the user layer and must not be read a second time as a project layer.
+func TestGrokHomeNotAProjectLayer(t *testing.T) {
+	f := newFixture(t)
+	f.write(filepath.Join(f.home, ".grok", "config.toml"), `
+[ui]
+permission_mode = "ask"
+`)
+	s := Collect(context.Background(), Options{Home: f.home, Probe: true, PlistPath: "-",
+		Agents: []string{AgentGrok}, ProjectDirs: []string{f.home}})
+	var userRows, projectRows int
+	for _, st := range s.Settings {
+		if st.Agent != AgentGrok || st.Key != "ui.permission_mode" {
+			continue
+		}
+		switch st.Scope {
+		case "user":
+			userRows++
+		case "project":
+			projectRows++
+		}
+	}
+	if userRows != 1 || projectRows != 0 {
+		t.Errorf("ui.permission_mode rows: user=%d project=%d, want 1 and 0 (home .grok is the user layer)", userRows, projectRows)
+	}
+}
+
 // Grok's always-approve mode maps to no approval at all.
 func TestGrokAlwaysApprove(t *testing.T) {
 	f := newFixture(t)
