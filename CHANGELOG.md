@@ -34,6 +34,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   remaining Slack token families, in the collector and in the CI secret scan.
 - The action validates its `version` input before building a release URL and
   creates its temporary SARIF with a portable `mktemp` template.
+- Merges to `main` now require an approval from a second identity, and
+  administrators are subject to branch protection, so a stolen owner token
+  cannot push to `main` or approve its own pull request.
 
 ### Fixed
 
