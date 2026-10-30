@@ -22,6 +22,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Faster feedback. The pre-commit hook runs the fast checks only (about a
+  second; the fixture suite runs in CI before merge), the 19 dashboard
+  renders run in parallel, and CI skips each job's heavy steps when the
+  diff is markdown outside docs/tables while still reporting every
+  required status check.
 - License changed from Apache-2.0 to MIT.
 - Supply chain: every GitHub Action is pinned to a commit SHA; the mod's
   CI installs Steampipe and Powerpipe from pinned releases verified
