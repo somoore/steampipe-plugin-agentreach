@@ -63,8 +63,6 @@ func run(args []string, stdout, stderr io.Writer, collect collector) int {
 	switch args[0] {
 	case "version", "--version":
 		fmt.Fprintln(stdout, "agentreach "+posture.CollectorVersion)
-		fmt.Fprintf(stdout, "behaviour model basis: claude_code %s, codex %s, opencode %s (cline and grok follow the current docs; no release pin)\n",
-			posture.ModelBasisClaudeCode, posture.ModelBasisCodex, posture.ModelBasisOpenCode)
 		return 0
 	case "help", "-h", "--help":
 		fmt.Fprint(stdout, usage)

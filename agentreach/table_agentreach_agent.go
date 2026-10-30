@@ -31,8 +31,6 @@ func tableAgentreachAgent(_ context.Context) *plugin.Table {
 			{Name: "managed_settings_present", Type: proto.ColumnType_BOOL, Description: "Whether any managed document exists: cached server-managed settings, a macOS managed-preferences plist, managed-settings.json or a managed-settings.d drop-in, including one that could not be read."},
 			{Name: "managed_source", Type: proto.ColumnType_STRING, Description: "Which admin source supplies the managed tier after first-wins selection: remote, plist, file, drop-ins, file + drop-ins, or a list ending in ', merged'. Empty when no source delivers a policy key."},
 			{Name: "managed_sources_behavior", Type: proto.ColumnType_STRING, Description: "How several managed sources combine: first-wins (default) or merge."},
-			{Name: "model_basis", Type: proto.ColumnType_STRING, Description: "Claude Code or Codex release the behaviour model (gates, defaults, protected files) was verified against."},
-			{Name: "model_basis_stale", Type: proto.ColumnType_BOOL, Description: "True when the installed version is newer than model_basis, so modelled gates and defaults may lag the installed release; null when the installed version is unknown."},
 			{Name: "network_approval", Type: proto.ColumnType_STRING, Description: "What decides a shell command connection to a host no rule allows: none, classifier, prompt, denied or unknown."},
 			{Name: "network_approval_reason", Type: proto.ColumnType_STRING, Description: "Why network_approval has its value."},
 			{Name: "network_strict_allowlist", Type: proto.ColumnType_BOOL, Description: "Whether strictAllowlist or allowManagedDomainsOnly refuses hosts outside the sandbox allowlist in every mode."},

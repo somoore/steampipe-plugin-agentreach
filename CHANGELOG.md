@@ -8,6 +8,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Version reporting is shared and picks the numeric token, so Grok reports
+  `1.0.46` instead of `[stable]` and OpenCode reports `2.2.4` instead of
+  `v2.2.4`.
+- A machine with no coding agent installed now produces no rows at all for
+  Claude Code too, so the scan exits 0 with "No coding agent or harness
+  found" instead of reporting a phantom agent as not assessed.
+- Codex's internet reach-host row now carries `reachable` (from
+  `sandbox_mode`, `network_access` and exec-policy allow rules), `service`
+  and `probe_method`, matching the same row for Claude Code; with the
+  experimental `network_proxy` on it stays unknown instead of claiming
+  either way.
+- Codex reach files are deduplicated by path, so the home dotenv reached
+  from a session started in `~` no longer appears twice.
 - Two gate bugs found by the first end-to-end run against a real machine
   with all five agents installed:
   - Codex MCP tool approval now follows the session policy when
@@ -22,6 +35,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- No release is pinned. `model_basis` and `model_basis_stale` are gone:
+  versions change weekly, so a stored baseline only ever went stale.
+  agentreach reports the version each binary reports about itself, reads
+  version-dependent behaviour from the installed release where it can
+  (auto mode's rule-drop list), and keeps the weekly docs drift alarm for
+  the rest. A construct the model cannot interpret comes back unknown or
+  not assessed, never guessed.
 - Faster feedback. The pre-commit hook runs the fast checks only (about a
   second; the fixture suite runs in CI before merge), the 19 dashboard
   renders run in parallel, and CI skips each job's heavy steps when the

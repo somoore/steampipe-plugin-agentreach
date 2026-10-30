@@ -34,11 +34,6 @@ import (
 
 const AgentOpenCode = "opencode"
 
-// ModelBasisOpenCode is the OpenCode release the permission model was
-// verified against (v1 and v2 permission formats, docs fetched 2026-10-29;
-// v2.2.1 verified on a live install).
-const ModelBasisOpenCode = "2.2.1"
-
 // opencodeSettingKeys are copied into agentreach_setting. Only non-secret
 // values; provider options and credentials never leave the parser.
 var opencodeSettingKeys = []string{
@@ -63,13 +58,11 @@ func collectOpenCode(ctx context.Context, opts Options, snap *Snapshot) {
 	if opts.Home == "" {
 		if p, err := lookPath("opencode"); err == nil {
 			a.BinaryPath = p
-			if out, err := runVersion(ctx, p); err == nil && len(out) > 0 {
-				a.Version = out[len(out)-1]
+			if out, err := runVersion(ctx, p); err == nil {
+				a.Version = versionFrom(out)
 			}
 		}
 	}
-	a.ModelBasis = ModelBasisOpenCode
-	a.ModelBasisStale = versionAfter(a.Version, ModelBasisOpenCode)
 
 	managed := opts.OpenCodeManagedDir
 	if managed == "" && opts.Home == "" {

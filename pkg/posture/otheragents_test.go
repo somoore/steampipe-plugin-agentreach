@@ -25,6 +25,21 @@ func newAgentOpts(f fixture, agents ...string) Options {
 	return Options{Home: f.home, Probe: true, PlistPath: "-", Agents: agents}
 }
 
+// Claude Code is absent on an empty machine too: discovery is automatic for
+// every agent, not only the newer ones. A machine with no agent has no
+// .claude directory, no .claude.json and no binary.
+func TestClaudeCodeAbsentWhenNotInstalled(t *testing.T) {
+	home := t.TempDir() // unlike newFixture, nothing is written here
+	s := Collect(context.Background(), Options{Home: home, Probe: true, PlistPath: "-",
+		Agents: []string{AgentClaudeCode}})
+	if len(s.Agents) != 0 {
+		t.Fatalf("claude_code row on an empty machine: %+v", s.Agents)
+	}
+	if len(s.Settings) != 0 || len(s.Paths) != 0 {
+		t.Errorf("rows on an empty machine: %d settings, %d paths", len(s.Settings), len(s.Paths))
+	}
+}
+
 // An empty machine reports no rows at all for the new agents.
 func TestNewAgentsAbsentWhenNotInstalled(t *testing.T) {
 	f := newFixture(t)
@@ -91,9 +106,6 @@ func TestOpenCodeGatesAndRows(t *testing.T) {
 	}
 	if a.SandboxEnabled || a.SandboxEnforced {
 		t.Error("opencode has no OS sandbox")
-	}
-	if a.ModelBasis != ModelBasisOpenCode {
-		t.Errorf("model basis %q", a.ModelBasis)
 	}
 	var gitAllow, npmDeny, editDeny bool
 	for _, r := range s.SandboxRules {
@@ -196,9 +208,6 @@ args = ["p.js"]
 	}
 	if !strings.Contains(a.SandboxBypasses, "Linux only") {
 		t.Errorf("sandbox bypasses %q must name the Linux-only network note", a.SandboxBypasses)
-	}
-	if a.ModelBasis != ModelBasisGrok || a.ModelBasisStale != nil {
-		t.Errorf("grok model basis %q stale %v, want empty and unknown", a.ModelBasis, a.ModelBasisStale)
 	}
 	var allow, deny, fsRow, projRow bool
 	for _, r := range s.SandboxRules {

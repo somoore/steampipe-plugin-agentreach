@@ -30,12 +30,6 @@ import (
 
 const AgentCline = "cline"
 
-// ModelBasisCline is empty: Cline's surfaces (extension, CLI, desktop,
-// JetBrains, SDK) version independently and the docs do not tie behaviour
-// to a release number. The model was verified against docs.cline.bot on
-// 2026-10-29; the docs drift alarm watches those pages.
-const ModelBasisCline = ""
-
 func collectCline(ctx context.Context, opts Options, snap *Snapshot) {
 	home := opts.Home
 	if home == "" {
@@ -51,8 +45,8 @@ func collectCline(ctx context.Context, opts Options, snap *Snapshot) {
 	if opts.Home == "" {
 		if p, err := lookPath("cline"); err == nil {
 			a.BinaryPath = p
-			if out, err := runVersion(ctx, p); err == nil && len(out) > 0 {
-				a.Version = out[len(out)-1]
+			if out, err := runVersion(ctx, p); err == nil {
+				a.Version = versionFrom(out)
 			}
 		}
 	}
@@ -65,8 +59,6 @@ func collectCline(ctx context.Context, opts Options, snap *Snapshot) {
 			a.Version = extVersion
 		}
 	}
-	a.ModelBasis = ModelBasisCline
-	a.ModelBasisStale = versionAfter(a.Version, ModelBasisCline)
 
 	mcpPaths := []string{filepath.Join(dir, "data", "settings", "cline_mcp_settings.json")}
 	if g := vscodeGlobalStorage(opts, home); g != "" {

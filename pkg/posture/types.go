@@ -35,9 +35,7 @@ type Agent struct {
 	Agent                   string   `json:"agent"`
 	BinaryPath              string   `json:"binary_path"`
 	Version                 string   `json:"version"`
-	ModelBasis              string   `json:"model_basis"`       // release the behaviour model was verified against (ModelBasis*)
-	ModelBasisStale         *bool    `json:"model_basis_stale"` // installed version is newer than the basis; nil when unknown
-	ACPHarness              string   `json:"acp_harness"`       // editor ACP agent servers that can start this agent; their options are not visible
+	ACPHarness              string   `json:"acp_harness"` // editor ACP agent servers that can start this agent; their options are not visible
 	InstallMethod           string   `json:"install_method"`
 	AutoUpdates             *bool    `json:"auto_updates"`
 	ConfigDir               string   `json:"config_dir"`

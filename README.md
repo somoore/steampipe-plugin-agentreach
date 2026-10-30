@@ -6,13 +6,13 @@ Query what your AI coding agent can actually reach on your machine, with SQL.
 
 Discovery is automatic: an agent that is not installed produces no rows at all.
 
-| Agent | Coverage | Verified against |
-|-------|----------|------------------|
-| Claude Code | Full: settings, hooks, MCP, plugins, skills, sandbox, permission rules, CI workflows, launch flags, attack paths | 2.1.312 |
-| Codex | Full: config, sandbox, approval policy, MCP, hooks, skills, plugins, write targets, attack paths | 0.155.1 |
-| OpenCode | Config, permission gates (v1 and v2 formats), MCP, instruction files, agents | 2.2.1 |
-| Cline | Config, MCP, rules and instruction files; approval gates honestly unknown (stored in app state we cannot read) | current docs |
-| Grok Build | Config, permission modes and rules, sandbox profiles, MCP, instruction files | current docs |
+| Agent | Coverage |
+|-------|----------|
+| Claude Code | Full: settings, hooks, MCP, plugins, skills, sandbox, permission rules, CI workflows, launch flags, attack paths |
+| Codex | Full: config, sandbox, approval policy, MCP, hooks, skills, plugins, write targets, attack paths |
+| OpenCode | Config, permission gates (v1 and v2 formats), MCP, instruction files, agents |
+| Cline | Config, MCP, rules and instruction files; approval gates honestly unknown (stored in app state we cannot read) |
+| Grok Build | Config, permission modes and rules, sandbox profiles, MCP, instruction files |
 
 Every table has an `agent` column. The [compliance mod](https://github.com/somoore/steampipe-mod-agentreach-compliance) judges the Claude Code rows; the other agents are inventory.
 
@@ -20,7 +20,7 @@ Every table has an `agent` column. The [compliance mod](https://github.com/somoo
 
 agentreach is a read-only security scanner for AI coding agents. It reads each agent's configuration and answers one question: if a malicious instruction reached your agent, what could it actually do?
 
-It never runs your agent, never changes anything, and never stores a secret value. A machine with no coding agent installed is a clean result.
+It never starts a session, never sends a prompt, never writes your configuration, and never stores a secret value. It does run each agent's `--version` to report the installed release, and some agents create their own state directory the first time that happens. A machine with no coding agent installed is a clean result.
 
 One collector backs three things:
 
@@ -77,13 +77,13 @@ Table docs and examples are in [docs/tables](docs/tables).
 
 - Every fact carries an evidence type: `configured` (read from a settings file), `observed` (an inert probe saw it), `inferred` (derived from both), or `unknown`.
 - A false is a fact. A null means unknown or unrestricted, never safe.
-- `agentreach_agent.model_basis` names the release each agent's behaviour model was verified against. If your install is newer, the scan tells you its findings may lag.
+- `agentreach_agent.version` is whatever the installed binary reports. Nothing is pinned to a release: agents ship continuously, so a construct the model cannot interpret comes back `unknown` or not assessed instead of being guessed.
 - `agentreach_agent.acp_harness` names the editor Agent Client Protocol servers that can start each agent, whose options are not visible to the scan.
 - Not collected: content that only loads at run time, remote config, and the newer agents' plugin and skill directories.
 
 ## Security promises
 
-- Read-only. A file probe reads one byte and stops. A network probe dials and disconnects.
+- Read-only. A file probe reads one byte and stops. A network probe dials and disconnects. The only subprocess is each agent's `--version`.
 - No secret value is ever stored. Values become booleans and free text is scrubbed.
 - Deterministic. No LLM anywhere in the verdict path.
 

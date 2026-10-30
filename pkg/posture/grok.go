@@ -32,12 +32,6 @@ import (
 
 const AgentGrok = "grok"
 
-// ModelBasisGrok is empty: Grok Build is an early beta without published
-// release numbers agentreach can compare against. The model was verified
-// against docs.x.ai/build on 2026-10-29; the docs drift alarm watches those
-// pages, and model_basis_stale stays null (unknown) for a versioned install.
-const ModelBasisGrok = ""
-
 func collectGrok(ctx context.Context, opts Options, snap *Snapshot) {
 	home := opts.Home
 	if home == "" {
@@ -53,13 +47,11 @@ func collectGrok(ctx context.Context, opts Options, snap *Snapshot) {
 	if opts.Home == "" {
 		if p, err := lookPath("grok"); err == nil {
 			a.BinaryPath = p
-			if out, err := runVersion(ctx, p); err == nil && len(out) > 0 {
-				a.Version = out[len(out)-1]
+			if out, err := runVersion(ctx, p); err == nil {
+				a.Version = versionFrom(out)
 			}
 		}
 	}
-	a.ModelBasis = ModelBasisGrok
-	a.ModelBasisStale = versionAfter(a.Version, ModelBasisGrok)
 
 	system := opts.GrokSystemDir
 	if system == "" && opts.Home == "" {

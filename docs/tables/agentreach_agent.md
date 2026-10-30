@@ -120,14 +120,19 @@ where
   agent = 'claude_code';
 ```
 
-### Check whether the behaviour model matches the installed release
+### Check which agents were not fully assessed
+
+`assessment_complete` is false when a gate could not be established from
+configuration, so the row says so instead of guessing.
 
 ```sql
 select
   agent,
   version,
-  model_basis,
-  model_basis_stale
+  assessment_complete,
+  collect_errors
 from
-  agentreach_agent;
+  agentreach_agent
+where
+  assessment_complete is false;
 ```

@@ -404,12 +404,18 @@ var scenarios = []scenario{
 		},
 	},
 	{
-		name: "fx-agents", about: "Claude Code in default mode with the sandbox off and an SSH key, beside the three other agents as inventory (OpenCode with permissive defaults plus a bash pattern policy, a remote MCP server and a markdown agent; Cline with an MCP server, global and project rules and unreadable approval state; Grok Build in ask mode with allow and deny bash rules, a strict sandbox profile and a project MCP server), and ACP harnesses: Zed agent servers that can start Claude Code and OpenCode through adapters whose options agentreach cannot see. No control judges the three; the host pins that their rows never leak into the Claude Code rows.",
+		name: "fx-agents", about: "Claude Code in default mode with the sandbox off, an SSH key and a user-scope remote MCP server over cleartext HTTP, beside the three other agents as inventory (OpenCode with permissive defaults plus a bash pattern policy, a remote MCP server and a markdown agent; Cline with an MCP server, global and project rules and unreadable approval state; Grok Build in ask mode with allow and deny bash rules, a strict sandbox profile and a project MCP server), and ACP harnesses: Zed agent servers that can start Claude Code and OpenCode through adapters whose options agentreach cannot see. No control judges the three; the host pins that their rows never leak into the Claude Code rows.",
 		version: "2.1.312", probe: true,
 		build: func(b *builder) {
 			b.json(".claude/settings.json", obj{"permissions": obj{"defaultMode": "default"}})
 			b.sshKey()
 			b.project("${DB_API_KEY}", true)
+			// A user-scope remote MCP server over cleartext HTTP: the MCP-04
+			// alarm branch, on a host that never leaks into the other agents.
+			b.json(".claude.json", obj{
+				"projects":   obj{b.proj: obj{"hasTrustDialogAccepted": true}},
+				"mcpServers": obj{"cleartext": obj{"type": "http", "url": "http://mcp.example.com/mcp"}},
+			})
 			// OpenCode: permissive defaults, one bash policy, a remote MCP
 			// server turned off, a markdown agent with permission frontmatter.
 			b.json(".config/opencode/opencode.json", obj{

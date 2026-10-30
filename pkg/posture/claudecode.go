@@ -245,6 +245,14 @@ func (c *ccCollector) doc(path string) map[string]any {
 //// AGENT
 
 func (c *ccCollector) ingestAgent(ctx context.Context) {
+	// Discovery is automatic for every agent: no binary, no config directory
+	// and no settings file means Claude Code is not installed, so it gets no
+	// row at all. Fixture runs skip binary detection, so their config files
+	// are what make the agent present.
+	if c.binaryPath == "" && !dirExists(c.configDir) && !fileExists(c.globalPath) && c.user == nil &&
+		len(c.managedSources) == 0 {
+		return
+	}
 	a := Agent{
 		Agent:                  AgentClaudeCode,
 		ConfigDir:              c.configDir,
@@ -264,8 +272,6 @@ func (c *ccCollector) ingestAgent(ctx context.Context) {
 		}
 	}
 	a.BinaryPath, a.Version = c.binaryPath, c.version
-	a.ModelBasis = ModelBasisClaudeCode
-	a.ModelBasisStale = versionAfter(c.version, ModelBasisClaudeCode)
 	a.InstallMethod = getString(c.global, "installMethod")
 	a.AutoUpdates = getBool(c.global, "autoUpdates")
 	a.LoggedIn = getMap(c.global, "oauthAccount") != nil

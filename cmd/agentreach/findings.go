@@ -218,10 +218,6 @@ func buildFindings(s *posture.Snapshot, failOn string, acceptAttested bool) ([]F
 			}
 			sum.Assumptions = append(sum.Assumptions, note)
 		}
-		if a.ModelBasisStale != nil && *a.ModelBasisStale {
-			sum.Assumptions = append(sum.Assumptions, agentName(a.Agent)+" "+a.Version+
-				" is newer than the behaviour model basis "+a.ModelBasis+": some findings may lag the installed release")
-		}
 		if a.EffectivePermissionMode == "" || a.EffectivePermissionMode == "unknown" {
 			reasons = append(reasons, "the permission mode is unknown")
 		}

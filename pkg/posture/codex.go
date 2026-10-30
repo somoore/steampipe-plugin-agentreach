@@ -78,8 +78,6 @@ func collectCodex(ctx context.Context, opts Options, snap *Snapshot) {
 			cancel()
 		}
 	}
-	a.ModelBasis = ModelBasisCodex
-	a.ModelBasisStale = versionAfter(a.Version, ModelBasisCodex)
 	if !dirExists(dir) && a.BinaryPath == "" {
 		return
 	}
@@ -242,11 +240,19 @@ func collectCodex(ctx context.Context, opts Options, snap *Snapshot) {
 	// default by itself doesn't hide files"), and Codex reads files by
 	// shell command, so a readable file is reachable by shell with the
 	// session's read gate.
+	// One row per file: the home catalog is read first, then project files, so
+	// a path that is both (the home dotenv in a session started in ~) keeps
+	// the catalog row. Claude Code dedupes the same way.
+	seen := map[string]bool{}
 	addFile := func(path, category, desc, projectDir, readGate, unknown string) {
+		if seen[path] {
+			return
+		}
 		fi, err := os.Stat(path)
 		if err != nil {
 			return
 		}
+		seen[path] = true
 		r := ReachFile{Agent: AgentCodex, Path: path, Category: category, Tier: tierFor(category, path), Description: desc + cacheNote(path, snap.CollectedAt), ProjectDir: projectDir, Exists: true, IsDir: fi.IsDir()}
 		r.ReadableEvidence, r.ReachEvidence = EvidenceUnknown, EvidenceUnknown
 		f := false
@@ -279,8 +285,21 @@ func collectCodex(ctx context.Context, opts Options, snap *Snapshot) {
 			addFile(filepath.Join(p, n.Name), n.Category, n.Description, p, gates[i].Read, gates[i].ReadUnknown)
 		}
 	}
-	inet := ReachHost{Agent: AgentCodex, Target: "*", Kind: "internet", SandboxEnabled: a.SandboxEnabled,
+	inet := ReachHost{Agent: AgentCodex, Target: "*", Kind: "internet", Service: "internet",
+		ProbeMethod: "assumed", SandboxEnabled: a.SandboxEnabled,
 		ReachableEvidence: EvidenceInferred, Approval: g.Network}
+	// The internet row is assumed, never probed: agentreach sends nothing.
+	// With the sandbox on, outbound access depends on
+	// sandbox_workspace_write.network_access (default false) or an exec-policy
+	// allow rule that runs a network-capable command outside the sandbox.
+	// The experimental network_proxy limits traffic by rules the model does
+	// not read, so it stays unknown rather than claimed either way.
+	reach := g.Sandbox == "danger-full-access" || g.NetworkAccess || len(g.AllowRules) > 0
+	if g.Proxy && a.SandboxEnabled {
+		inet.Reachable = nil
+	} else {
+		inet.Reachable = &reach
+	}
 	snap.ReachHosts = append(snap.ReachHosts, inet)
 
 	// Plugins, hooks, skills, local services and write targets.
