@@ -337,3 +337,64 @@ func TestCodexVersionOrder(t *testing.T) {
 		}
 	}
 }
+
+// codexToolApproval: unset mode is optional-with-auto, so the session's
+// approval policy decides (developers.openai.com/codex/mcp). A per-server
+// approve overrides the policy; prompt under never stays unknown because
+// casf cannot establish which wins; writes prompts for non-read-only tools.
+func TestCodexToolApprovalModes(t *testing.T) {
+	cases := []struct {
+		mode, approval, want string
+	}{
+		{"", "never", ApprovalNone},        // unset + never: tools auto-run
+		{"", "on-request", ApprovalPrompt}, // unset + on-request: tools ask
+		{"", "untrusted", ApprovalPrompt},  // untrusted prompts every command
+		{"", "", ApprovalUnknown},          // no session context
+		{"auto", "never", ApprovalNone},    // explicit auto follows policy
+		{"approve", "on-request", ApprovalNone},
+		{"prompt", "on-request", ApprovalPrompt},
+		{"prompt", "never", ApprovalUnknown}, // cannot establish which wins
+		{"writes", "never", ApprovalPrompt},  // non-read-only tools still ask
+	}
+	for _, c := range cases {
+		sm := map[string]any{}
+		if c.mode != "" {
+			sm["default_tools_approval_mode"] = c.mode
+		}
+		if got := codexToolApproval(sm, c.approval); got != c.want {
+			t.Errorf("mode=%q approval=%q: got %s, want %s", c.mode, c.approval, got, c.want)
+		}
+	}
+}
+
+// A project-scoped MCP server inherits the project session's gate instead
+// of reporting unknown (the live e2e found every path through one stuck at
+// unknown under approval_policy never).
+func TestCodexProjectMCPInheritsProjectGate(t *testing.T) {
+	f := newFixture(t)
+	f.write(filepath.Join(f.home, ".codex", "config.toml"), `
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+
+[projects."`+filepath.Join(f.home, "proj")+`"]
+trust_level = "trusted"
+`)
+	f.write(filepath.Join(f.home, "proj", ".codex", "config.toml"), `
+[mcp_servers.buddy]
+command = "node"
+args = ["buddy.js"]
+`)
+	s := f.collect()
+	var buddy *MCPServer
+	for i, m := range s.MCPServers {
+		if m.Agent == AgentCodex && m.Name == "buddy" && m.Scope == "project" {
+			buddy = &s.MCPServers[i]
+		}
+	}
+	if buddy == nil {
+		t.Fatal("project buddy MCP server not collected")
+	}
+	if buddy.ToolApproval != ApprovalNone {
+		t.Errorf("project buddy tool_approval = %s, want none (project gate is never)", buddy.ToolApproval)
+	}
+}

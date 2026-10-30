@@ -6,6 +6,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Fixed
+
+- Two gate bugs found by the first end-to-end run against a real machine
+  with all five agents installed:
+  - Codex MCP tool approval now follows the session policy when
+    `default_tools_approval_mode` is unset (the docs make it optional with
+    an `auto` value, so unset means the policy decides), and project-scoped
+    servers inherit their project session's gate instead of always
+    reporting unknown. On the test machine this turned 6,182 paths from
+    unknown to their real gate under `approval_policy = never`.
+  - Grok no longer reads `~/.grok/config.toml` twice when the home
+    directory is a registered project (once as the user layer and once as
+    a project layer), which duplicated every setting row.
+
 ### Changed
 
 - License changed from Apache-2.0 to MIT.

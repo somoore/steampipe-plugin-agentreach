@@ -188,16 +188,6 @@ func collectCodex(ctx context.Context, opts Options, snap *Snapshot) {
 			if pr.Trusted {
 				pcfg, pbad = readCodexTOML(pcPath, &a, snap)
 				prules = codexAllowRules(filepath.Join(p, ".codex", "rules"))
-				servers := getMap(pcfg, "mcp_servers")
-				for _, n := range sortedKeys(servers) {
-					s := codexMCPServer(pcPath, n, getMap(servers, n), "")
-					s.Scope, s.ProjectDir = "project", p
-					if s.Enabled == nil {
-						t := true // trusting the project is the approval; no per-server prompt
-						s.Enabled = &t
-					}
-					snap.MCPServers = append(snap.MCPServers, s)
-				}
 			}
 			if name := codexInstructionName(p); name != "" {
 				pr.HasInstructionFile = true
@@ -207,6 +197,21 @@ func collectCodex(ctx context.Context, opts Options, snap *Snapshot) {
 			}
 		}
 		pg := m.gate(trust, pcfg, prules, pbad)
+		// Project-scoped MCP servers inherit the project session's gate,
+		// like the user-scope servers below inherit the machine-wide one.
+		if pr.Trusted && pcfg != nil {
+			pcPath := filepath.Join(p, ".codex", "config.toml")
+			servers := getMap(pcfg, "mcp_servers")
+			for _, n := range sortedKeys(servers) {
+				s := codexMCPServer(pcPath, n, getMap(servers, n), pg.Approval)
+				s.Scope, s.ProjectDir = "project", p
+				if s.Enabled == nil {
+					t := true // trusting the project is the approval; no per-server prompt
+					s.Enabled = &t
+				}
+				snap.MCPServers = append(snap.MCPServers, s)
+			}
+		}
 		gates = append(gates, pg)
 		pr.EffectivePermissionMode = pg.Mode()
 		pr.PermissionModeSource = pg.SandboxSource

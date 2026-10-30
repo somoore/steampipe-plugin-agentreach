@@ -452,6 +452,15 @@ func codexRuleCarriesNetwork(prefix string) bool {
 // default_tools_approval_mode / tools.<tool>.approval_mode = auto (default)
 // | prompt | writes | approve (mcp docs). Only approve and prompt are
 // definite; auto and writes depend on tool annotations agentreach cannot see.
+// codexToolApproval decides what a call to one of the server's tools gets.
+// Source: developers.openai.com/codex/mcp, "default_tools_approval_mode
+// (optional): Default approval behavior for tools from this server.
+// Supported values are auto, prompt, writes, and approve." Unset is
+// optional-with-auto, so the session's approval policy decides; a
+// per-server "approve" wins over the policy; "prompt" asks for every tool
+// (under approval_policy never, casf cannot establish which wins, so
+// unknown); "writes" auto-runs read-only tools and prompts for the rest,
+// and casf cannot see which tools are read-only, so the gate is a prompt.
 func codexToolApproval(sm map[string]any, approval string) string {
 	mode := getString(sm, "default_tools_approval_mode")
 	weakest := mode
@@ -463,7 +472,20 @@ func codexToolApproval(sm map[string]any, approval string) string {
 	switch {
 	case weakest == "approve":
 		return ApprovalNone
-	case mode == "prompt" && approval != "never":
+	case weakest == "prompt":
+		if approval == "never" {
+			return ApprovalUnknown
+		}
+		return ApprovalPrompt
+	case weakest == "writes":
+		return ApprovalPrompt
+	}
+	// Unset or "auto": the session's approval policy decides. An empty
+	// policy (no session context) stays unknown.
+	switch approval {
+	case "never":
+		return ApprovalNone
+	case "on-request", "untrusted", "granular":
 		return ApprovalPrompt
 	}
 	return ApprovalUnknown

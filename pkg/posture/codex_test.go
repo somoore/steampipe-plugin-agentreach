@@ -84,7 +84,9 @@ REF_API_KEY = "${REF_API_KEY}"
 	if !mcp["docs"].HasInlineSecret || mcp["ref"].HasInlineSecret {
 		t.Errorf("inline secret: docs=%v ref=%v", mcp["docs"].HasInlineSecret, mcp["ref"].HasInlineSecret)
 	}
-	if mcp["docs"].ToolApproval != ApprovalUnknown || mcp["ref"].Pinned == nil || !*mcp["ref"].Pinned {
+	if mcp["docs"].ToolApproval != ApprovalNone || mcp["ref"].Pinned == nil || !*mcp["ref"].Pinned {
+		// approval_policy is never and docs sets no default_tools_approval_mode,
+		// so unset means auto and the policy decides: tools run unprompted.
 		t.Errorf("docs approval=%s ref pinned=%s", mcp["docs"].ToolApproval, b2s(mcp["ref"].Pinned))
 	}
 
