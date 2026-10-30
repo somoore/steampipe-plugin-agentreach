@@ -40,7 +40,7 @@ jobs:
             done
           done
           cd dist
-          sha256sum ./*.tar.gz >checksums.txt
+          sha256sum *.tar.gz >checksums.txt
           cat checksums.txt
 
       - name: publish the release
