@@ -38,8 +38,11 @@ jobs:
   # A demo home with an agent config, a key and an untrusted instruction file,
   # so the same action produces findings and uploads a non-empty SARIF.
   # fail-on is never on purpose: this job proves the upload, not the gate.
+  # It runs after the clean job so its analysis is the latest for the
+  # category, which is what lets the cleanup job delete it.
   with-findings:
     name: action, with findings
+    needs: clean-runner
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -89,3 +92,30 @@ jobs:
           print("sarif results:", len(results))
           sys.exit(0 if results else 1)
           EOF
+
+  # The demo's findings are not findings in this repository. Deleting its
+  # analysis removes them from code scanning; the clean analysis stays.
+  cleanup:
+    name: action, clean up the demo analysis
+    needs: with-findings
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: delete the demo analysis
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for i in 1 2 3; do
+            id=$(gh api "repos/${{ github.repository }}/code-scanning/analyses?ref=refs/heads/main&per_page=100" \
+              --jq '.[] | select(.analysis_key | endswith(":with-findings")) | .id' | head -1)
+            if [ -n "$id" ] && gh api -X DELETE \
+              "repos/${{ github.repository }}/code-scanning/analyses/$id" >/dev/null 2>&1; then
+              echo "removed analysis $id"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "warning: could not remove the demo analysis; it is the only one with alerts" >&2
