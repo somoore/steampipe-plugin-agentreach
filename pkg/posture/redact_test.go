@@ -23,6 +23,9 @@ func TestScrubText(t *testing.T) {
 		{"OPENAI_API_KEY=" + sk + " node server.js", sk, "node server.js"},
 		{"git clone https://user:" + fake("pw", 4) + "@github.com/a/b", "pwQ7x", "github.com/a/b"},
 		{"echo " + gh, gh, "echo"},
+		{"huggingface " + fake("hf_", 12), "hf_Q7x", "huggingface"},
+		{"stripe " + fake("sk_live_", 4), "sk_live_Q7x", "stripe"},
+		{"sendgrid SG." + strings.Repeat("a", 24), "SG.aaa", "sendgrid"},
 		{"python hook.py --event Stop", "", "python hook.py --event Stop"},
 	}
 	for _, c := range cases {

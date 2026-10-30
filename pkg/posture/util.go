@@ -169,7 +169,7 @@ func sha256File(p string) string {
 var (
 	// secretValuePattern matches well-known credential prefixes. Only the
 	// boolean result is ever stored; values are never retained.
-	secretValuePattern = regexp.MustCompile(`(?i)^(sk-[A-Za-z0-9_-]{10,}|sk-ant-[A-Za-z0-9_-]{10,}|ghp_[A-Za-z0-9]{20,}|gho_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[abp]-[A-Za-z0-9-]{10,}|AKIA[A-Z0-9]{16}|AIza[A-Za-z0-9_-]{30,}|tpuf_[A-Za-z0-9]{10,}|msy_[A-Za-z0-9]{10,}|glpat-[A-Za-z0-9_-]{15,}|npm_[A-Za-z0-9]{30,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)`)
+	secretValuePattern = regexp.MustCompile(`(?i)^(sk-[A-Za-z0-9_-]{10,}|sk-ant-[A-Za-z0-9_-]{10,}|sk_live_[A-Za-z0-9]{10,}|rk_live_[A-Za-z0-9]{10,}|ghp_[A-Za-z0-9]{20,}|gho_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[abposc]-[A-Za-z0-9-]{10,}|AKIA[A-Z0-9]{16}|AIza[A-Za-z0-9_-]{30,}|tpuf_[A-Za-z0-9]{10,}|msy_[A-Za-z0-9]{10,}|glpat-[A-Za-z0-9_-]{15,}|npm_[A-Za-z0-9]{30,}|pypi-[A-Za-z0-9_-]{20,}|hf_[A-Za-z0-9]{30,}|dop_v1_[A-Za-z0-9]{30,}|SG\.[A-Za-z0-9_-]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)`)
 	secretKeyPattern   = regexp.MustCompile(`(?i)(api[_-]?key|secret|token|password|passwd|credential|auth)`)
 	// identifierKeyPattern names a value that says who, not a credential:
 	// an OAuth client ID or a user name is not secret on its own, even

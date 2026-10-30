@@ -36,6 +36,9 @@ runs:
       run: |
         set -euo pipefail
         ver="${AGENTREACH_VERSION#v}"
+        case "$ver" in
+          ""|*[!0-9.]*|*..*) echo "agentreach: invalid version input" >&2; exit 1 ;;
+        esac
         os="$(uname -s | tr '[:upper:]' '[:lower:]')"
         case "$(uname -m)" in
           arm64|aarch64) arch=arm64 ;;
@@ -61,7 +64,7 @@ runs:
         # (agentreach.sarif -> ~/.ssh/authorized_keys, say), and --out
         # truncates whatever path it is given. Create our own file in the
         # runner temp directory instead.
-        sarif="$(mktemp "${RUNNER_TEMP:-/tmp}/agentreach-XXXXXX.sarif")"
+        sarif="$(mktemp "${RUNNER_TEMP:-/tmp}/agentreach-sarif.XXXXXX")"
         code=0
         "$tmp/agentreach" scan --format sarif --out "$sarif" --fail-on "$AGENTREACH_FAIL_ON" $AGENTREACH_ARGS || code=$?
         echo "sarif=$sarif" >> "$GITHUB_OUTPUT"

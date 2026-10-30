@@ -29,6 +29,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The bundled Claude Code skill installs the CLI pinned to v0.2.0. It still
   told users to set `GOPRIVATE` for a repository that has been public since the
   first release.
+- Redaction now recognises Stripe (`sk_live_`, `rk_live_`), Hugging Face
+  (`hf_`), PyPI (`pypi-`), DigitalOcean (`dop_v1_`), SendGrid (`SG.`) and the
+  remaining Slack token families, in the collector and in the CI secret scan.
+- The action validates its `version` input before building a release URL and
+  creates its temporary SARIF with a portable `mktemp` template.
 
 ### Fixed
 
