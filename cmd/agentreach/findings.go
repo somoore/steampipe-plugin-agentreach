@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"slices"
 	"sort"
@@ -94,11 +95,27 @@ type AgentInventory struct {
 	Version string `json:"version"`
 }
 
-var homeRE = regexp.MustCompile(`(/Users|/home)/[^/\s"']+`)
+var homeRE = regexp.MustCompile(`(^|[\s"'(=])(/Users|/home)/[^/\s"']+`)
 
-// tilde collapses home directories and scrubs credential-shaped text.
+// tilde collapses the user's home directory and scrubs credential-shaped
+// text. The real home is replaced first, so a home outside /Users or /home
+// (a demo tree under /tmp) shortens correctly. The second pattern is
+// anchored to a path boundary: the old unanchored (/Users|/home)/<name>
+// regex also rewrote any project path that contained a "home" directory,
+// turning /srv/home/app into /srv~.
 func tilde(s string) string {
-	return posture.ScrubText(homeRE.ReplaceAllString(s, "~"))
+	home := os.Getenv("HOME")
+	if home == "" {
+		home, _ = os.UserHomeDir()
+	}
+	if home != "" && home != "/" {
+		s = strings.ReplaceAll(s, home+"/", "~/")
+		if strings.HasSuffix(s, home) {
+			s = strings.TrimSuffix(s, home) + "~"
+		}
+	}
+	s = homeRE.ReplaceAllString(s, "${1}~")
+	return posture.ScrubText(s)
 }
 
 func levelFor(approval string) string {

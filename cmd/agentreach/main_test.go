@@ -340,6 +340,25 @@ func TestCIFindings(t *testing.T) {
 	}
 }
 
+// tilde shortens the real home and synthetic /Users and /home paths, but
+// never rewrites a "home" directory in the middle of a path.
+func TestTilde(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	for _, tc := range []struct{ in, want string }{
+		{home + "/.ssh/id_ed25519", "~/.ssh/id_ed25519"},
+		{home, "~"},
+		{"/Users/alice/proj/CLAUDE.md", "~/proj/CLAUDE.md"},
+		{"in /home/bob/proj", "in ~/proj"},
+		{"/srv/home/app/CLAUDE.md", "/srv/home/app/CLAUDE.md"},
+		{"/tmp/x/home/y/.env", "/tmp/x/home/y/.env"},
+	} {
+		if got := tilde(tc.in); got != tc.want {
+			t.Errorf("tilde(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}
+
 // An SDK launcher in bypassPermissions is reported, never failing: agentreach
 // read it from source text.
 func TestSDKFinding(t *testing.T) {

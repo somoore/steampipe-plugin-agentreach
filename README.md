@@ -19,18 +19,9 @@ agentreach scan
 
 Prebuilt binaries for macOS and Linux on arm64 and amd64 are on [Releases](https://github.com/somoore/steampipe-plugin-agentreach/releases). Verify them against `checksums.txt`.
 
-A condensed run on a developer laptop:
+![agentreach scanning a demo home](docs/demo.gif)
 
-```text
-Agents found: claude_code 2.1.314, codex 0.155.1
-
-Candidate paths by approval: none 4, classifier 2, prompt 0, unknown 0
-Failing findings (fail-on auto): 4 of 6
-
-Failing paths, one line per file (worst first):
-  Claude Code: ~/.ssh can be read and sent out: 4 path(s) from 2 source(s), through 3 exit(s), nothing asks you
-    e.g. ~/work/app/CLAUDE.md (instruction_file) can make the agent read ~/.ssh by shell and send it out through plugin hooks, and no step asks you first.
-```
+Recorded against a demo home in a container, so your paths and findings will differ. On a real laptop the same scan usually names the instruction file the agent obeys, the file it reads, and the exit it uses.
 
 `agentreach scan` exits 0 (clean), 1 (failing findings) or 2 (not fully assessed). `--format json` gives the whole snapshot, `--format sarif` is for GitHub code scanning, and `--no-probe` skips the network and file probes.
 
