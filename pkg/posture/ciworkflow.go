@@ -138,7 +138,7 @@ func parseWorkflow(root, path string) []CIWorkflow {
 	if err != nil || !fi.Mode().IsRegular() || fi.Size() > ciMaxFileBytes {
 		return nil
 	}
-	b, err := os.ReadFile(path)
+	b, err := readFileLimited(path)
 	if err != nil {
 		return nil
 	}

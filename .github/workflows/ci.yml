@@ -24,6 +24,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0 # gitleaks scans the whole history; also needed to diff against the base
+          persist-credentials: false # keep GITHUB_TOKEN out of .git/config
 
       - name: detect docs-only change
         id: diff
@@ -90,6 +91,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: detect docs-only change
         id: diff
@@ -133,6 +135,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: detect docs-only change
         id: diff
@@ -156,3 +159,19 @@ jobs:
       - name: gosec + govulncheck (pinned versions)
         if: steps.diff.outputs.docs_only != 'true'
         run: make security
+
+  # GitHub's dependency graph, checked on pull requests: a new or changed
+  # dependency with a known vulnerability fails before it merges.
+  dependency-review:
+    name: dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4
+        with:
+          fail-on-severity: moderate

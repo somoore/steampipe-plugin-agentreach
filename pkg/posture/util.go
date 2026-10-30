@@ -4,6 +4,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -29,9 +31,41 @@ func fileExists(p string) bool {
 	return err == nil
 }
 
+// maxFileBytes caps how much of a discovered file the collector reads. A
+// repository can ship a config or instruction file as a symlink to /dev/zero
+// or to a multi-gigabyte file; reading it whole would hang the scan or
+// exhaust memory. Every config, instruction and metadata read goes through
+// readFileLimited for that reason.
+const maxFileBytes = 8 << 20
+
+// readFileLimited reads a regular file, refusing anything else (FIFO, device,
+// socket) and anything larger than maxFileBytes.
+func readFileLimited(p string) ([]byte, error) {
+	fi, err := os.Stat(p)
+	if err != nil {
+		return nil, err
+	}
+	if !fi.Mode().IsRegular() {
+		return nil, fmt.Errorf("%s is not a regular file", p)
+	}
+	f, err := os.Open(p)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = f.Close() }()
+	b, err := io.ReadAll(io.LimitReader(f, maxFileBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(b) > maxFileBytes {
+		return nil, fmt.Errorf("%s is larger than %d bytes", p, maxFileBytes)
+	}
+	return b, nil
+}
+
 // readJSON parses a JSON file into a generic map. Missing files return nil, nil.
 func readJSON(p string) (map[string]any, error) {
-	b, err := os.ReadFile(p)
+	b, err := readFileLimited(p)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
@@ -124,7 +158,7 @@ func gitTracked(path string) bool {
 
 // sha256File hashes a file's contents.
 func sha256File(p string) string {
-	b, err := os.ReadFile(p)
+	b, err := readFileLimited(p)
 	if err != nil {
 		return ""
 	}

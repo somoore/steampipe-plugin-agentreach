@@ -67,3 +67,11 @@ grep " agentreach_0.2.0_linux_amd64.tar.gz\$" checksums.txt | sha256sum -c -
 tar -xzf agentreach.tgz
 ./agentreach scan --format sarif --out agentreach.sarif --fail-on auto
 ```
+
+The release also carries GitHub build provenance. Verify it with the GitHub
+CLI, which checks that this repository's release workflow built the file:
+
+```bash
+gh attestation verify agentreach_0.2.0_linux_amd64.tar.gz \
+  --repo somoore/steampipe-plugin-agentreach
+```

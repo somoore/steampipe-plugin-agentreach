@@ -57,7 +57,11 @@ runs:
           (cd "$tmp" && grep -E "  (\./)?${asset}\$" checksums.txt | shasum -a 256 -c -)
         fi
         tar -xzf "$tmp/$asset" -C "$tmp"
-        sarif="${GITHUB_WORKSPACE}/agentreach.sarif"
+        # A file in the workspace can be a symlink planted by the repository
+        # (agentreach.sarif -> ~/.ssh/authorized_keys, say), and --out
+        # truncates whatever path it is given. Create our own file in the
+        # runner temp directory instead.
+        sarif="$(mktemp "${RUNNER_TEMP:-/tmp}/agentreach-XXXXXX.sarif")"
         code=0
         "$tmp/agentreach" scan --format sarif --out "$sarif" --fail-on "$AGENTREACH_FAIL_ON" $AGENTREACH_ARGS || code=$?
         echo "sarif=$sarif" >> "$GITHUB_OUTPUT"

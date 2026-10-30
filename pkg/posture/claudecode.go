@@ -668,7 +668,7 @@ func (c *ccCollector) addInstructionPlugin(scope, projectDir, path, kind, plugin
 	if err != nil || fi.IsDir() {
 		return
 	}
-	b, err := os.ReadFile(path)
+	b, err := readFileLimited(path)
 	if err != nil {
 		return
 	}
@@ -1055,19 +1055,19 @@ func (c *ccCollector) ingestProjects() {
 		// scope; the same goes for ~/.claude/{rules,skills,agents,commands}.
 		isHome := filepath.Clean(dir) == filepath.Clean(c.home) || filepath.Join(dir, ".claude") == c.configDir
 		if !isHome {
-			if m, err := readJSON(proj); err == nil && m != nil {
+			if m := c.configOrErr(proj); m != nil {
 				c.ingestSettings("project", proj, dir, m, dir)
 			}
 		}
 		// In the home directory .claude/settings.json is the user file, but
 		// .claude/settings.local.json is still the local file of sessions
 		// started there (settings, "Where settings live").
-		if m, err := readJSON(local); err == nil && m != nil {
+		if m := c.configOrErr(local); m != nil {
 			c.ingestSettings("local", local, dir, m, dir)
 		}
 		// local-scope MCP servers recorded in the global config for this project
 		c.ingestMCPMap("local", c.globalPath, dir, getMap(rec, "mcpServers"), nil)
-		if m, err := readJSON(mcp); err == nil && m != nil {
+		if m := c.configOrErr(mcp); m != nil {
 			projSettings, _ := readJSON(proj)
 			localSettings, _ := readJSON(local)
 			if isHome {
@@ -1096,7 +1096,7 @@ var remoteURLPattern = regexp.MustCompile(`(?m)^\s*url\s*=\s*(.+)$`)
 
 // gitRemoteFromConfig reads the first remote url from .git/config without exec.
 func gitRemoteFromConfig(p string) string {
-	b, err := os.ReadFile(p)
+	b, err := readFileLimited(p)
 	if err != nil {
 		return ""
 	}
@@ -1161,7 +1161,7 @@ func (c *ccCollector) uncommitted(path string) bool {
 	if !ok {
 		return false // not in HEAD: new and staged, or not tracked
 	}
-	b, err := os.ReadFile(path)
+	b, err := readFileLimited(path)
 	if err != nil {
 		return false
 	}
@@ -1430,7 +1430,7 @@ func (c *ccCollector) reachFileRow(path, category, desc, projectDir string, prob
 	}
 	r.ReadableEvidence, r.ReachEvidence = EvidenceUnknown, EvidenceUnknown
 	if probe {
-		r.Readable = probeReadable(path, r.IsDir)
+		r.Readable = probeReadable(path)
 		r.ProbeMethod = "user_process"
 		r.ReadableEvidence, r.ReachEvidence = EvidenceObserved, EvidenceInferred
 		blocked := c.sandboxActive(projectDir) && deny != ""

@@ -18,7 +18,7 @@ agentreach is a read-only scanner. It reads the agent's settings and runs inert 
 Run `command -v agentreach`. If it is missing:
 
 - With Go 1.26 or later and a checkout of github.com/somoore/steampipe-plugin-agentreach: `make cli` there, then use `./bin/agentreach`.
-- Otherwise install the pinned release: `GOPRIVATE=github.com/somoore/* go install github.com/somoore/steampipe-plugin-agentreach/cmd/agentreach@v0.1.1`. Never `@latest`: an unpinned install is what agentreach's own supply-chain checks flag. `GOPRIVATE` is needed while the repository is private.
+- Otherwise install the pinned release: `go install github.com/somoore/steampipe-plugin-agentreach/cmd/agentreach@v0.2.0`. Never `@latest`: an unpinned install is what agentreach's own supply-chain checks flag.
 
 Tell the user which one you used. Do not download prebuilt binaries from anywhere else.
 

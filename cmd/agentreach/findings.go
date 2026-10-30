@@ -97,6 +97,25 @@ type AgentInventory struct {
 
 var homeRE = regexp.MustCompile(`(^|[\s"'(=])(/Users|/home)/[^/\s"']+`)
 
+// textSafe makes a value safe to print in a terminal. Control characters,
+// including ANSI and OSC escape sequences and newlines, are shown as \xNN.
+// A repository, instruction file or MCP server can choose a path, name or
+// command that carries them; printing them raw would let that content rewrite
+// the report or drive the terminal (clipboard writes, title changes).
+func textSafe(s string) string {
+	var b strings.Builder
+	b.Grow(len(s))
+	for _, r := range s {
+		switch {
+		case r < 0x20 || r == 0x7f || (r >= 0x80 && r <= 0x9f):
+			fmt.Fprintf(&b, `\x%02x`, r)
+		default:
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
 // tilde collapses the user's home directory and scrubs credential-shaped
 // text. The real home is replaced first, so a home outside /Users or /home
 // (a demo tree under /tmp) shortens correctly. The second pattern is
@@ -115,7 +134,7 @@ func tilde(s string) string {
 		}
 	}
 	s = homeRE.ReplaceAllString(s, "${1}~")
-	return posture.ScrubText(s)
+	return textSafe(posture.ScrubText(s))
 }
 
 func levelFor(approval string) string {

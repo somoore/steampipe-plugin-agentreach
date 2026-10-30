@@ -1,7 +1,6 @@
 package posture
 
 import (
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -128,7 +127,7 @@ func (x *codexScan) hooks() {
 		}
 		pcPath := filepath.Join(p, ".codex", "config.toml")
 		var pcfg map[string]any
-		if b, err := os.ReadFile(pcPath); err == nil {
+		if b, err := readFileLimited(pcPath); err == nil {
 			_ = toml.Unmarshal(b, &pcfg) // a parse error is recorded by collectCodex
 		}
 		layer("project", filepath.Join(p, ".codex"), pcfg, pcPath, p, false, blocked)

@@ -35,6 +35,23 @@ func (c *ccCollector) pluginEnabledIn(full, projectDir string) *bool {
 	return nil
 }
 
+// configOrErr reads a JSON config and records a collect error when the file
+// exists but cannot be read or parsed. A repository can ship a config as a
+// FIFO, a directory, or a symlink to something enormous; treating that as
+// absent would let it hide exactly what the scan exists to see. The error
+// makes the posture not fully assessed instead of quietly clean.
+func (c *ccCollector) configOrErr(path string) map[string]any {
+	if !fileExists(path) {
+		return nil
+	}
+	m, err := readJSON(path)
+	if err != nil {
+		c.snap.Errors = append(c.snap.Errors, "claude_code: "+path+": "+err.Error())
+		return nil
+	}
+	return m
+}
+
 // ingestPluginMCP emits the MCP servers a plugin bundles: .mcp.json at the
 // plugin root (either {"mcpServers": {...}} or servers keyed at the top
 // level) and mcpServers in plugin.json (an object, or a path to a JSON file).
@@ -46,7 +63,7 @@ func (c *ccCollector) ingestPluginMCP(root, plugin, projectDir string, enabled *
 			c.snap.MCPServers[i].PluginName = plugin
 		}
 	}
-	if m, err := readJSON(filepath.Join(root, ".mcp.json")); err == nil && m != nil {
+	if m := c.configOrErr(filepath.Join(root, ".mcp.json")); m != nil {
 		if s := getMap(m, "mcpServers"); s != nil {
 			emit(filepath.Join(root, ".mcp.json"), s)
 		} else {
@@ -54,8 +71,8 @@ func (c *ccCollector) ingestPluginMCP(root, plugin, projectDir string, enabled *
 		}
 	}
 	for _, mf := range []string{filepath.Join(root, ".claude-plugin", "plugin.json"), filepath.Join(root, "plugin.json")} {
-		m, err := readJSON(mf)
-		if err != nil || m == nil {
+		m := c.configOrErr(mf)
+		if m == nil {
 			continue
 		}
 		switch v := m["mcpServers"].(type) {
@@ -63,7 +80,7 @@ func (c *ccCollector) ingestPluginMCP(root, plugin, projectDir string, enabled *
 			emit(mf, v)
 		case string:
 			p := filepath.Join(root, strings.ReplaceAll(v, "${CLAUDE_PLUGIN_ROOT}", ""))
-			if inner, err := readJSON(p); err == nil && inner != nil {
+			if inner := c.configOrErr(p); inner != nil {
 				if s := getMap(inner, "mcpServers"); s != nil {
 					emit(p, s)
 				} else {

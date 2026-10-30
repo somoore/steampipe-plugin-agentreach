@@ -178,7 +178,7 @@ func vscodeExtensionVersion(home, id string) (string, string) {
 		var pkg struct {
 			Version string `json:"version"`
 		}
-		if b, err := os.ReadFile(filepath.Join(exts, name, "package.json")); err == nil && json.Unmarshal(b, &pkg) == nil {
+		if b, err := readFileLimited(filepath.Join(exts, name, "package.json")); err == nil && json.Unmarshal(b, &pkg) == nil {
 			if pkg.Version > version { // several versions can be installed
 				best, version = filepath.Join(exts, name), pkg.Version
 			}
@@ -209,7 +209,7 @@ func vscodeGlobalStorage(opts Options, home string) string {
 }
 
 func readJSONFile(path string) (map[string]any, error) {
-	b, err := os.ReadFile(path)
+	b, err := readFileLimited(path)
 	if err != nil {
 		return nil, err
 	}

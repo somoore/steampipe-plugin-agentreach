@@ -13,13 +13,19 @@ import (
 )
 
 // probeReadable opens p for reading and reads at most one byte. Directories
-// are listed instead. The byte is discarded; nothing is retained.
-func probeReadable(p string, isDir bool) *bool {
+// are listed instead. Anything that is not a regular file is reported not
+// readable: opening a FIFO (a named pipe) blocks until a writer appears, so a
+// repository that ships one could otherwise hang the scan forever, and a
+// device or socket is not the file read the posture model describes.
+func probeReadable(p string) *bool {
 	var ok bool
-	if isDir {
+	fi, err := os.Stat(p)
+	switch {
+	case err != nil:
+	case fi.IsDir():
 		_, err := os.ReadDir(p)
 		ok = err == nil
-	} else {
+	case fi.Mode().IsRegular():
 		f, err := os.Open(p)
 		if err == nil {
 			var one [1]byte
@@ -107,7 +113,7 @@ func procListeners() []listeningPort {
 	var res []listeningPort
 	seen := map[string]bool{}
 	for _, file := range []string{"/proc/net/tcp", "/proc/net/tcp6"} {
-		b, err := os.ReadFile(file)
+		b, err := readFileLimited(file)
 		if err != nil {
 			continue
 		}

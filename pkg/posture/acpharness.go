@@ -48,7 +48,7 @@ func discoverACP(opts Options, home string) []acpHarness {
 	var out []acpHarness
 	for _, d := range dirs {
 		p := filepath.Join(d, "settings.json")
-		b, err := os.ReadFile(p)
+		b, err := readFileLimited(p)
 		if err != nil {
 			continue
 		}

@@ -6,6 +6,30 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## v0.2.0 - 2026-10-30
 
+### Security
+
+- The file probe reads only regular files. Opening a FIFO (a named pipe) blocks
+  until a writer appears, so a repository that shipped one could hang a scan
+  forever. Devices and sockets are skipped for the same reason.
+- The text report escapes control characters in every path, name and message.
+  A repository or MCP server can choose a name carrying ANSI or OSC sequences;
+  printing them raw would let that content rewrite the report or drive the
+  terminal (clipboard writes, title changes). JSON was already escaped by the
+  encoder.
+- The CI action writes its SARIF to the runner temp directory, not the
+  workspace. A repository could otherwise commit `agentreach.sarif` as a
+  symlink to a file the job may write, and `--out` would truncate the target.
+- Every checkout uses `persist-credentials: false`, so the workflow token is
+  not left in `.git/config` for later steps to read.
+- Releases carry GitHub build provenance (`actions/attest-build-provenance`),
+  and the workflow runs `go mod verify` before building. `docs/ci.md` shows
+  `gh attestation verify`.
+- Pull requests run a dependency review that fails on a moderate or worse
+  advisory in a new or changed dependency.
+- The bundled Claude Code skill installs the CLI pinned to v0.2.0. It still
+  told users to set `GOPRIVATE` for a repository that has been public since the
+  first release.
+
 ### Fixed
 
 - Version reporting is shared and picks the numeric token, so Grok reports

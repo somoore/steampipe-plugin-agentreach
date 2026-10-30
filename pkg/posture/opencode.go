@@ -310,7 +310,7 @@ func openCodeToolName(tool string) string {
 // readOpenCodeConfig parses opencode.json or .jsonc (the shared JSONC
 // stripper also tolerates trailing commas).
 func readOpenCodeConfig(path string) (map[string]any, error) {
-	b, err := os.ReadFile(path)
+	b, err := readFileLimited(path)
 	if err != nil {
 		return nil, err
 	}

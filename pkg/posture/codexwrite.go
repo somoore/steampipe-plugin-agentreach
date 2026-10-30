@@ -99,7 +99,7 @@ func (x *codexScan) codexWriteRule(path, cwd string, g codexGate) (rule string, 
 			case ".git":
 				protected = err == nil
 				if err == nil && !fi.IsDir() {
-					if b, e := os.ReadFile(pp); e == nil {
+					if b, e := readFileLimited(pp); e == nil {
 						if s, ok := strings.CutPrefix(strings.TrimSpace(string(b)), "gitdir:"); ok {
 							gd := strings.TrimSpace(s)
 							if !filepath.IsAbs(gd) {

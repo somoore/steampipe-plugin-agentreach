@@ -340,6 +340,22 @@ func TestCIFindings(t *testing.T) {
 	}
 }
 
+// textSafe shows control characters instead of printing them, so content
+// that reaches the report cannot drive the terminal.
+func TestTextSafe(t *testing.T) {
+	for _, tc := range []struct{ in, want string }{
+		{"plain/path", "plain/path"},
+		{"a\x1b[2Jb", `a\x1b[2Jb`},
+		{"osc\x1b]52;c;ZGF0YQ==\x07", `osc\x1b]52;c;ZGF0YQ==\x07`},
+		{"line\nbreak\ttab\x7f", `line\x0abreak\x09tab\x7f`},
+		{"café", "café"},
+	} {
+		if got := textSafe(tc.in); got != tc.want {
+			t.Errorf("textSafe(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}
+
 // tilde shortens the real home and synthetic /Users and /home paths, but
 // never rewrites a "home" directory in the middle of a path.
 func TestTilde(t *testing.T) {

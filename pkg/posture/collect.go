@@ -97,7 +97,7 @@ func wantAgent(opts Options, id string) bool {
 // ReadSnapshot loads a snapshot written by the agentreach CLI. Snapshots from a
 // newer major schema are rejected rather than half-read.
 func ReadSnapshot(path string) (*Snapshot, error) {
-	b, err := os.ReadFile(path)
+	b, err := readFileLimited(path)
 	if err != nil {
 		return nil, err
 	}

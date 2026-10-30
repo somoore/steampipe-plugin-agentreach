@@ -6,6 +6,8 @@ on:
 
 permissions:
   contents: write
+  id-token: write # for build provenance
+  attestations: write # for build provenance
 
 # Builds the CLI for the four supported platforms and attaches the tarballs
 # plus checksums to the tag's GitHub release. Only GitHub-owned actions are
@@ -17,6 +19,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -42,6 +45,14 @@ jobs:
           cd dist
           sha256sum *.tar.gz >checksums.txt
           cat checksums.txt
+
+      - name: verify the module hashes
+        run: go mod verify
+
+      - name: attest build provenance
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
+        with:
+          subject-path: "dist/*.tar.gz"
 
       - name: publish the release
         env:

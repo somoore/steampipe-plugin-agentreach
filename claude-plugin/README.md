@@ -14,7 +14,7 @@ The plugin has no hooks and no MCP servers. agentreach itself counts plugin hook
 /plugin install agentreach@agentreach
 ```
 
-The skill needs the CLI: `make cli` in this repository (Go 1.26), or `GOPRIVATE=github.com/somoore/* go install github.com/somoore/steampipe-plugin-agentreach/cmd/agentreach@v0.1.1`. Pin a release; agentreach's own supply-chain checks flag an unpinned install.
+The skill needs the CLI: `make cli` in this repository (Go 1.26), or `go install github.com/somoore/steampipe-plugin-agentreach/cmd/agentreach@v0.2.0`. Pin a release; agentreach's own supply-chain checks flag an unpinned install.
 
 ## Optional: a scan at session start
 

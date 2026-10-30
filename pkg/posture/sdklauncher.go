@@ -131,7 +131,7 @@ func sdkBases(root, home string) []string {
 	var bases []string
 	check := func(dir string) {
 		for _, m := range sdkManifests {
-			b, err := os.ReadFile(filepath.Join(dir, m))
+			b, err := readFileLimited(filepath.Join(dir, m))
 			if err != nil || len(b) > 1<<20 {
 				continue
 			}
@@ -193,7 +193,7 @@ func scanSDKBase(root, base string) []SDKLauncher {
 		// #nosec G122 -- a read-only scan of source files; the only
 		// effect of a swapped path would be reading a different local
 		// file's bytes, which never leave this process unredacted.
-		b, err := os.ReadFile(p)
+		b, err := readFileLimited(p)
 		if err != nil {
 			return nil
 		}

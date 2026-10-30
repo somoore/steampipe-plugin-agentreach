@@ -36,7 +36,7 @@ func DefaultReviewLedgerPath(home string) string {
 // LoadReviewLedger reads a ledger; a missing file is an empty ledger.
 func LoadReviewLedger(path string) (*ReviewLedger, error) {
 	l := &ReviewLedger{Version: 1, path: path}
-	b, err := os.ReadFile(path)
+	b, err := readFileLimited(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return l, nil
 	}

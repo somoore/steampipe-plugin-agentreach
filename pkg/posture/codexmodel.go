@@ -1,7 +1,6 @@
 package posture
 
 import (
-	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -366,7 +365,7 @@ func codexAllowRules(dir string) []string {
 	sort.Strings(files)
 	var out []string
 	for _, f := range files {
-		b, err := os.ReadFile(f)
+		b, err := readFileLimited(f)
 		if err != nil {
 			continue
 		}

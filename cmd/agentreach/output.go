@@ -48,12 +48,12 @@ func writeText(w io.Writer, s *posture.Snapshot, fs []Finding, sum Summary) {
 	if !sum.Assessed {
 		fmt.Fprintln(w, "NOT FULLY ASSESSED:")
 		for _, r := range sum.NotAssessedBy {
-			fmt.Fprintln(w, "  - "+r)
+			fmt.Fprintln(w, "  - "+textSafe(r))
 		}
 		fmt.Fprintln(w)
 	}
 	for _, a := range sum.Assumptions {
-		fmt.Fprintln(w, "Assumed: "+a+".")
+		fmt.Fprintln(w, "Assumed: "+textSafe(a)+".")
 	}
 	if len(sum.Assumptions) > 0 {
 		fmt.Fprintln(w)
@@ -109,7 +109,7 @@ func writeText(w io.Writer, s *posture.Snapshot, fs []Finding, sum Summary) {
 		}
 	}
 	for _, f := range other {
-		fmt.Fprintf(w, "[%s] %s\n  %s\n", strings.ToUpper(f.Level), f.RuleID, f.Message)
+		fmt.Fprintf(w, "[%s] %s\n  %s\n", strings.ToUpper(f.Level), f.RuleID, textSafe(f.Message))
 	}
 	if len(other) > 0 {
 		fmt.Fprintln(w)
@@ -128,7 +128,7 @@ func writeText(w io.Writer, s *posture.Snapshot, fs []Finding, sum Summary) {
 			via = fmt.Sprintf(", through %d exit(s)", len(g.exits))
 		}
 		fmt.Fprintf(w, "  %s: %d path(s) from %d source(s)%s, %s\n    e.g. %s\n",
-			g.title, g.n, len(g.sources), via, gateWord(g.gate), g.example)
+			textSafe(g.title), g.n, len(g.sources), via, gateWord(g.gate), textSafe(g.example))
 	}
 	if fixes := rankFixes(fs, label); len(fixes) > 0 {
 		fmt.Fprintln(w, "\nWhat to change first (failing paths each change would close):")
@@ -136,7 +136,7 @@ func writeText(w io.Writer, s *posture.Snapshot, fs []Finding, sum Summary) {
 			if i == 5 {
 				break
 			}
-			fmt.Fprintf(w, "  %4d  %s\n", x.n, x.what)
+			fmt.Fprintf(w, "  %4d  %s\n", x.n, textSafe(x.what))
 		}
 	}
 	if len(order) == 0 && len(other) == 0 {

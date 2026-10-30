@@ -38,7 +38,7 @@ func runVersion(ctx context.Context, bin string) ([]string, error) {
 // parsed file, and the path when it exists but does not parse (recorded as
 // a collect error on the agent row).
 func readAgentTOML(path string, a *Agent, snap *Snapshot, agent string) (map[string]any, string) {
-	b, err := os.ReadFile(path)
+	b, err := readFileLimited(path)
 	if err != nil {
 		return nil, ""
 	}
@@ -101,7 +101,7 @@ func addAgentInstruction(snap *Snapshot, agent, scope, projectDir, path, kind st
 	if err != nil || fi.IsDir() {
 		return
 	}
-	b, err := os.ReadFile(path)
+	b, err := readFileLimited(path)
 	if err != nil {
 		return
 	}

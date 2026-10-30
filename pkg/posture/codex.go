@@ -86,7 +86,7 @@ func collectCodex(ctx context.Context, opts Options, snap *Snapshot) {
 	a.GlobalConfigPath = cfgPath
 	a.UserSettingsPath = cfgPath
 	var cfg map[string]any
-	if b, err := os.ReadFile(cfgPath); err == nil {
+	if b, err := readFileLimited(cfgPath); err == nil {
 		a.UserSettingsPresent = true
 		if err := toml.Unmarshal(b, &cfg); err != nil {
 			e := "codex: " + cfgPath + ": " + err.Error()
@@ -259,7 +259,7 @@ func collectCodex(ctx context.Context, opts Options, snap *Snapshot) {
 		r.ReachableViaReadTool, r.ReachableViaRetry = &f, &f
 		r.ReadApproval = ApprovalUnknown
 		if opts.Probe {
-			r.Readable = probeReadable(path, r.IsDir)
+			r.Readable = probeReadable(path)
 			r.ProbeMethod = "user_process"
 			r.ReadableEvidence = EvidenceObserved
 			if unknown == "" {
@@ -329,7 +329,7 @@ func applyCodexGate(a *Agent, g codexGate) {
 // readCodexTOML returns the parsed file, and the path when it exists but
 // does not parse (recorded as a collect error).
 func readCodexTOML(path string, a *Agent, snap *Snapshot) (map[string]any, string) {
-	b, err := os.ReadFile(path)
+	b, err := readFileLimited(path)
 	if err != nil {
 		return nil, ""
 	}
@@ -379,7 +379,7 @@ func addCodexInstructionKind(snap *Snapshot, scope, projectDir, path, kind, plug
 	if err != nil || fi.IsDir() {
 		return
 	}
-	b, err := os.ReadFile(path)
+	b, err := readFileLimited(path)
 	if err != nil {
 		return
 	}

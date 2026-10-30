@@ -53,7 +53,7 @@ func vscodeSettingsPath(home, goos string) string {
 
 // readJSONC reads a JSON-with-comments file such as VS Code's settings.
 func readJSONC(p string) (map[string]any, error) {
-	b, err := os.ReadFile(p)
+	b, err := readFileLimited(p)
 	if err != nil {
 		return nil, err
 	}
