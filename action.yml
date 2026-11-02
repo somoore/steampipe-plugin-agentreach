@@ -83,11 +83,13 @@ runs:
         sarif="$(mktemp "${RUNNER_TEMP:-/tmp}/agentreach-sarif.XXXXXX")"
         # Split args into an array instead of expanding $AGENTREACH_ARGS
         # unquoted: word-splitting only, so no globs and no accidental extra
-        # flags. The value is workflow configuration, but a later --out here
-        # would override the mktemp path above, so reject the output flags.
+        # flags. -d '' reads the whole value, so a multiline YAML args block
+        # keeps every line; read returns 1 at end of input without a NUL.
+        # The value is workflow configuration, but a later --out here would
+        # override the mktemp path above, so reject the output flags.
         extra=()
         if [ -n "$AGENTREACH_ARGS" ]; then
-          read -r -a extra <<<"$AGENTREACH_ARGS"
+          read -r -d '' -a extra <<<"$AGENTREACH_ARGS" || true
         fi
         for a in ${extra[@]+"${extra[@]}"}; do
           case "$a" in

@@ -19,8 +19,10 @@ func TestCompositeActionArgsHandling(t *testing.T) {
 	}
 	s := string(b)
 
-	if !strings.Contains(s, `read -r -a extra <<<"$AGENTREACH_ARGS"`) {
-		t.Error("args is not split with read -a")
+	// -d '' reads the whole value: plain read -a stops at the first line and
+	// would drop the rest of a multiline args block.
+	if !strings.Contains(s, `read -r -d '' -a extra <<<"$AGENTREACH_ARGS"`) {
+		t.Error("args is not split with read -d '' -a")
 	}
 	for _, line := range strings.Split(s, "\n") {
 		if strings.HasPrefix(strings.TrimSpace(line), "#") {
