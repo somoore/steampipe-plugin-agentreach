@@ -112,7 +112,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          for i in 1 2 3; do
+          for _ in 1 2 3; do
             id=$(gh api "repos/${{ github.repository }}/code-scanning/analyses?ref=refs/heads/main&per_page=100" \
               --jq '.[] | select(.analysis_key | endswith(":with-findings")) | .id' | head -1)
             if [ -n "$id" ] && gh api -X DELETE \

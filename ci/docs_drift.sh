@@ -19,7 +19,11 @@
 # refresh the fixtures' pinned versions if behaviour changed, then run
 # --update.
 set -uo pipefail
-cd "$(git rev-parse --show-toplevel)"
+if ! root=$(git rev-parse --show-toplevel 2>/dev/null); then
+  echo "docs_drift: not inside a git repository" >&2
+  exit 1
+fi
+cd "$root" || { echo "docs_drift: cannot enter $root" >&2; exit 1; }
 
 base=ci/docs-baseline.sha256
 update=0

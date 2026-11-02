@@ -30,16 +30,20 @@ func writeJSON(w io.Writer, s *posture.Snapshot, fs []Finding, sum Summary) erro
 }
 
 func writeText(w io.Writer, s *posture.Snapshot, fs []Finding, sum Summary) {
-	fmt.Fprintf(w, "agentreach %s  host %s  snapshot %s\n", s.CollectorVersion, s.Host, s.SnapshotID)
+	// Every field here can come from a snapshot file the operator did not
+	// write (--from, or a fleet snapshot_paths glob): a hostile host or
+	// version string could otherwise emit OSC 52 clipboard, title-change or
+	// screen-clear sequences into the terminal and the log collector.
+	fmt.Fprintf(w, "agentreach %s  host %s  snapshot %s\n", textSafe(s.CollectorVersion), textSafe(s.Host), textSafe(s.SnapshotID))
 	if len(sum.Agents) == 0 {
 		fmt.Fprintln(w, "No coding agent or harness found on this machine.")
 	} else {
 		parts := make([]string, 0, len(sum.Agents))
 		for _, ag := range sum.Agents {
 			if ag.Version != "" {
-				parts = append(parts, ag.Agent+" "+ag.Version)
+				parts = append(parts, textSafe(ag.Agent)+" "+textSafe(ag.Version))
 			} else {
-				parts = append(parts, ag.Agent)
+				parts = append(parts, textSafe(ag.Agent))
 			}
 		}
 		fmt.Fprintf(w, "Agents found: %s\n", strings.Join(parts, ", "))

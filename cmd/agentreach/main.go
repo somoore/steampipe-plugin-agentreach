@@ -148,7 +148,14 @@ func run(args []string, stdout, stderr io.Writer, collect collector) int {
 	return exitCode(sum)
 }
 
+// writeFile writes a report or snapshot and refuses an output path that is a
+// symlink. A repository can plant one (report.json -> ~/.ssh/authorized_keys)
+// and --out truncates whatever path it is given. A caller that wants to write
+// through a link can pass the resolved path instead.
 func writeFile(path string, fn func(io.Writer) error) error {
+	if fi, err := os.Lstat(path); err == nil && fi.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("%s is a symlink; refusing to write through it", path)
+	}
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 	if err != nil {
 		return err

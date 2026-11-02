@@ -80,6 +80,13 @@ func (c *ccCollector) ingestPluginMCP(root, plugin, projectDir string, enabled *
 			emit(mf, v)
 		case string:
 			p := filepath.Join(root, strings.ReplaceAll(v, "${CLAUDE_PLUGIN_ROOT}", ""))
+			// The manifest is plugin content: a "../../x.json" value must not
+			// make the collector ingest a config file outside the plugin.
+			if target, escaped := instructionEscapes(p, root); escaped {
+				c.snap.Errors = append(c.snap.Errors,
+					"plugin manifest "+mf+" points outside "+root+" (to "+target+"); not read")
+				continue
+			}
 			if inner := c.configOrErr(p); inner != nil {
 				if s := getMap(inner, "mcpServers"); s != nil {
 					emit(p, s)
@@ -93,8 +100,9 @@ func (c *ccCollector) ingestPluginMCP(root, plugin, projectDir string, enabled *
 
 // addTree adds every file under dir whose name ends with suffix (or equals
 // it, for SKILL.md), at any depth. Claude Code discovers rules, commands and
-// agents recursively.
-func (c *ccCollector) addTree(scope, projectDir, dir, suffix, kind, plugin string) {
+// agents recursively. root is the tree each file must resolve inside ("" for
+// operator-owned home paths); see instructionEscapes.
+func (c *ccCollector) addTree(scope, projectDir, root, dir, suffix, kind, plugin string) {
 	var found []string
 	// The callback swallows per-entry errors by design: an unreadable
 	// directory yields no files, which is the correct scanner result.
@@ -115,7 +123,7 @@ func (c *ccCollector) addTree(scope, projectDir, dir, suffix, kind, plugin strin
 	})
 	sort.Strings(found)
 	for _, p := range found {
-		c.addInstructionPlugin(scope, projectDir, p, kind, plugin)
+		c.addInstructionPlugin(scope, projectDir, root, p, kind, plugin)
 	}
 }
 

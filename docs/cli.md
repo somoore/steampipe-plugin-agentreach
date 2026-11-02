@@ -43,4 +43,4 @@ A finding is failing when its approval is at or below `--fail-on` (unknown never
 - `json`: `{schema_version, collector_version, snapshot_id, host, findings, summary}`.
 - `sarif`: SARIF 2.1.0 for code scanning; `partialFingerprints.agentreachPathId/v1` is the stable `path_id`.
 
-Home directories are written as `~` in messages, and every string is passed through the collector's credential scrubber again before it is printed. `--snapshot-out` and `--out` files are created with mode 0600.
+Home directories are written as `~` in messages, and every string is passed through the collector's credential scrubber again before it is printed. `--snapshot-out` and `--out` files are created with mode 0600, and an output path that is a symlink is refused rather than followed, so a report cannot truncate the link's target. Pass the resolved path if you really mean to write through a link.

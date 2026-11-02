@@ -4,6 +4,32 @@ All notable changes to this plugin are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Security
+
+- `git_remote` and marketplace `source_repo` go through the credential scrubber.
+  A clone URL that carries a personal access token (`https://user:ghp_…@host/…`)
+  no longer publishes the token to tables, JSON reports or snapshots.
+- Multi-line PEM private keys are redacted. The tokenizer treats each line as a
+  token, so a whole `-----BEGIN … PRIVATE KEY-----` block used to pass through
+  hook commands, settings strings and MCP args verbatim.
+- An instruction file discovered in a project or plugin is read only when it
+  resolves inside that tree. A repository that ships `CLAUDE.md` as a symlink
+  to a file outside it no longer gets that file's size and digest published;
+  the skip is a collect error. Home and managed paths are unchanged.
+- `--out` and `--snapshot-out` refuse a symlink instead of truncating its target.
+- The file reader and the one-byte probe classify the descriptor they opened,
+  so a regular file swapped for a FIFO between the check and the open cannot
+  hang a scan.
+- The action validates the `args` input (no `--out`/`--snapshot-out`) and splits
+  it with `read -a` instead of an unquoted expansion.
+- `ci/secrets.sh` fails when it cannot find the repository root instead of
+  scanning the wrong tree and passing.
+- Dependabot has a 7-day cooldown (14 days for major Go bumps), the
+  `examples/github-actions.yml` action is pinned to a commit, and
+  `golang.org/x/net` is updated to v0.62.0.
+
 ## v0.2.0 - 2026-10-30
 
 ### Security

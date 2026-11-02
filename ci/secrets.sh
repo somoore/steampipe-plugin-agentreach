@@ -5,8 +5,12 @@
 #      credentials at runtime, e.g. strings.Repeat, so none should appear)
 #   3. gitleaks over the whole git history (and the working tree)
 # AGENTREACH_GITLEAKS_REQUIRED=1 fails when gitleaks is missing (CI sets it).
-set -uo pipefail
-cd "$(git rev-parse --show-toplevel)"
+set -euo pipefail
+if ! root=$(git rev-parse --show-toplevel 2>/dev/null); then
+  echo "secrets: not inside a git repository; refusing to report a pass" >&2
+  exit 1
+fi
+cd "$root" || { echo "secrets: cannot enter $root" >&2; exit 1; }
 fail=0
 files=$(git ls-files -co --exclude-standard \
   | grep -E '(^|/)\.env($|\.)|(^|/)credentials(\.|$)|\.pem$|\.p12$|id_rsa|id_ed25519' || true)

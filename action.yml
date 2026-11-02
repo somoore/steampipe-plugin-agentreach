@@ -13,7 +13,11 @@ inputs:
     description: Fail on paths at or below this gate (auto, classifier, prompt, never).
     default: auto
   args:
-    description: Extra arguments for agentreach scan, for example a project directory.
+    description: >-
+      Extra arguments for agentreach scan, for example a project directory.
+      Split on whitespace and passed as separate arguments; quotes and globs
+      are not interpreted. This is trusted workflow configuration, not input
+      from the pull request.
     default: ""
 
 outputs:
@@ -77,8 +81,23 @@ runs:
         # truncates whatever path it is given. Create our own file in the
         # runner temp directory instead.
         sarif="$(mktemp "${RUNNER_TEMP:-/tmp}/agentreach-sarif.XXXXXX")"
+        # Split args into an array instead of expanding $AGENTREACH_ARGS
+        # unquoted: word-splitting only, so no globs and no accidental extra
+        # flags. The value is workflow configuration, but a later --out here
+        # would override the mktemp path above, so reject the output flags.
+        extra=()
+        if [ -n "$AGENTREACH_ARGS" ]; then
+          read -r -a extra <<<"$AGENTREACH_ARGS"
+        fi
+        for a in ${extra[@]+"${extra[@]}"}; do
+          case "$a" in
+            --out|--out=*|--snapshot-out|--snapshot-out=*)
+              echo "agentreach: the args input must not set $a; the action owns the output paths" >&2
+              exit 1 ;;
+          esac
+        done
         code=0
-        "$tmp/agentreach" scan --format sarif --out "$sarif" --fail-on "$AGENTREACH_FAIL_ON" $AGENTREACH_ARGS || code=$?
+        "$tmp/agentreach" scan --format sarif --out "$sarif" --fail-on "$AGENTREACH_FAIL_ON" ${extra[@]+"${extra[@]}"} || code=$?
         echo "sarif=$sarif" >> "$GITHUB_OUTPUT"
         echo "exit-code=$code" >> "$GITHUB_OUTPUT"
 

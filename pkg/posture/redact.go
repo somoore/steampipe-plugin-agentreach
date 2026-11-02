@@ -27,6 +27,12 @@ var (
 	assignPattern = regexp.MustCompile(`^(-{0,2}[A-Za-z_][A-Za-z0-9_.-]*)=(.+)$`)
 	// secretQueryKey is a URL query parameter that usually carries a credential.
 	secretQueryKey = regexp.MustCompile(`(?i)(key|token|secret|sig|signature|auth|password|passwd|code|credential|session)`)
+	// pemBlockPattern matches a whole PEM private key block, headers and body.
+	// The token loop below cannot catch it: a PEM is multi-line, so the header
+	// is split into "-----BEGIN", "RSA", "PRIVATE", "KEY-----" and no single
+	// token matches secretValuePattern. Certificates and public keys are left
+	// alone; only "PRIVATE KEY" (RSA, EC, OPENSSH, ENCRYPTED, ...) is secret.
+	pemBlockPattern = regexp.MustCompile(`(?s)-----BEGIN[A-Z0-9 ]*PRIVATE KEY-----.*?-----END[A-Z0-9 ]*PRIVATE KEY-----`)
 )
 
 // scrubText redacts credential-shaped spans in free text such as a shell
@@ -36,7 +42,13 @@ func scrubText(s string) (string, bool) {
 		return s, false
 	}
 	changed := false
-	out := authHeaderPattern.ReplaceAllStringFunc(s, func(m string) string {
+	// Whole PEM private key blocks first: they span lines, so the token loop
+	// below would only ever see one line of the header.
+	out := pemBlockPattern.ReplaceAllString(s, redactedMark)
+	if out != s {
+		changed = true
+	}
+	out = authHeaderPattern.ReplaceAllStringFunc(out, func(m string) string {
 		sub := authHeaderPattern.FindStringSubmatch(m)
 		if placeholderPattern.MatchString(sub[3]) {
 			return m
@@ -153,6 +165,12 @@ func scrubArgs(args []string) ([]string, bool) {
 	out := make([]string, len(args))
 	changed := false
 	for i, a := range args {
+		orig := a
+		// A single argument can carry a whole multi-line PEM block; redact it
+		// before the token/assignment rules, which only look at one line.
+		if pemBlockPattern.MatchString(a) {
+			a = pemBlockPattern.ReplaceAllString(a, redactedMark)
+		}
 		r := a
 		switch {
 		case i > 0 && secretFlagPattern.MatchString(args[i-1]) && !strings.HasPrefix(a, "-") && !placeholderPattern.MatchString(a):
@@ -173,7 +191,7 @@ func scrubArgs(args []string) ([]string, bool) {
 				}
 			}
 		}
-		if r != a {
+		if r != orig {
 			changed = true
 		}
 		out[i] = r
