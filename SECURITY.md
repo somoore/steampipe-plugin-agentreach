@@ -29,6 +29,13 @@ credit is given on request.
   File probes read at most one byte; network probes dial and disconnect.
 - Secret values are never stored: values are classified to booleans, and
   free text is scrubbed (`redact.go`) on every surface.
+- A file discovered inside a repository or a plugin is read only if it
+  resolves inside that tree. A symlinked instruction file that points
+  elsewhere is recorded as a collect error and is not fingerprinted; a
+  symlinked `--out`/`--snapshot-out` path is refused.
+- Operator-owned inputs are trusted config, not untrusted data: `srt_path`
+  in the connection config names a program the plugin runs, and the action's
+  `args` input is workflow configuration.
 - A machine with no coding agent installed is a clean result, not a finding.
 - Model gates carry their evidence type; a gate agentreach cannot establish
   is `unknown`, never "safe".

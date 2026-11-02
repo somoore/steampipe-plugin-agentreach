@@ -145,7 +145,7 @@ func collectClaudeCode(ctx context.Context, opts Options, snap *Snapshot) {
 	c.ingestLaunchFlags()
 	c.ingestManagedMCP()
 	c.ingestUserMCP()
-	c.addInstruction("managed", "", filepath.Join(c.managedDir, "CLAUDE.md"), "CLAUDE.md")
+	c.addInstruction("managed", "", "", filepath.Join(c.managedDir, "CLAUDE.md"), "CLAUDE.md")
 	c.ingestUserInstructionFiles()
 	c.ingestPlugins()
 	c.ingestMarketplaces()
@@ -652,18 +652,26 @@ func (c *ccCollector) ingestManagedMCP() {
 //// INSTRUCTION FILES
 
 func (c *ccCollector) ingestUserInstructionFiles() {
-	c.addInstruction("user", "", filepath.Join(c.configDir, "CLAUDE.md"), "CLAUDE.md")
-	c.addTree("user", "", filepath.Join(c.configDir, "rules"), ".md", "rules", "")
-	c.addTree("user", "", filepath.Join(c.configDir, "skills"), "SKILL.md", "skill", "")
-	c.addTree("user", "", filepath.Join(c.configDir, "agents"), ".md", "subagent", "")
-	c.addTree("user", "", filepath.Join(c.configDir, "commands"), ".md", "command", "")
+	c.addInstruction("user", "", "", filepath.Join(c.configDir, "CLAUDE.md"), "CLAUDE.md")
+	c.addTree("user", "", "", filepath.Join(c.configDir, "rules"), ".md", "rules", "")
+	c.addTree("user", "", "", filepath.Join(c.configDir, "skills"), "SKILL.md", "skill", "")
+	c.addTree("user", "", "", filepath.Join(c.configDir, "agents"), ".md", "subagent", "")
+	c.addTree("user", "", "", filepath.Join(c.configDir, "commands"), ".md", "command", "")
 }
 
-func (c *ccCollector) addInstruction(scope, projectDir, path, kind string) {
-	c.addInstructionPlugin(scope, projectDir, path, kind, "")
+func (c *ccCollector) addInstruction(scope, projectDir, root, path, kind string) {
+	c.addInstructionPlugin(scope, projectDir, root, path, kind, "")
 }
 
-func (c *ccCollector) addInstructionPlugin(scope, projectDir, path, kind, pluginName string) {
+// addInstructionPlugin records one instruction file. root is the tree the file
+// must resolve inside (the project or plugin directory); "" for operator-owned
+// home and managed paths.
+func (c *ccCollector) addInstructionPlugin(scope, projectDir, root, path, kind, pluginName string) {
+	if target, escaped := instructionEscapes(path, root); escaped {
+		c.snap.Errors = append(c.snap.Errors,
+			"instruction file "+path+" resolves outside "+root+" (to "+target+"); not read")
+		return
+	}
 	fi, err := os.Stat(path)
 	if err != nil || fi.IsDir() {
 		return
@@ -794,10 +802,10 @@ func (c *ccCollector) ingestPlugins() {
 			}
 			c.ingestPluginMCP(root, name, dir, en)
 			before := len(c.snap.InstructionFiles)
-			c.addTree("plugin", dir, filepath.Join(root, "skills"), "SKILL.md", "skill", name)
-			c.addTree("plugin", dir, filepath.Join(root, "agents"), ".md", "subagent", name)
-			c.addTree("plugin", dir, filepath.Join(root, "commands"), ".md", "command", name)
-			c.addInstructionPlugin("plugin", dir, filepath.Join(root, "CLAUDE.md"), "CLAUDE.md", name)
+			c.addTree("plugin", dir, root, filepath.Join(root, "skills"), "SKILL.md", "skill", name)
+			c.addTree("plugin", dir, root, filepath.Join(root, "agents"), ".md", "subagent", name)
+			c.addTree("plugin", dir, root, filepath.Join(root, "commands"), ".md", "command", name)
+			c.addInstructionPlugin("plugin", dir, root, filepath.Join(root, "CLAUDE.md"), "CLAUDE.md", name)
 			for i := before; i < len(c.snap.InstructionFiles); i++ {
 				v := *en
 				c.snap.InstructionFiles[i].PluginEnabled = &v
@@ -837,11 +845,16 @@ func (c *ccCollector) ingestMarketplaces() {
 			continue
 		}
 		src := getMap(rec, "source")
+		// A marketplace source can be a URL with a credential in it (a private
+		// repo cloned with a PAT). SourceRepo is published and snapshotted, so
+		// scrub it like every other URL; bare "org/repo" values pass through.
+		sourceRepo := firstNonEmpty(getString(src, "repo"), getString(src, "url"), getString(src, "path"))
+		sourceRepo, _ = scrubURL(sourceRepo)
 		mk := Marketplace{
 			Agent:           AgentClaudeCode,
 			Name:            name,
 			SourceType:      getString(src, "source"),
-			SourceRepo:      firstNonEmpty(getString(src, "repo"), getString(src, "url"), getString(src, "path")),
+			SourceRepo:      sourceRepo,
 			InstallLocation: getString(rec, "installLocation"),
 			AutoUpdate:      getBool(rec, "autoUpdate"),
 			LastUpdated:     parseTime(getString(rec, "lastUpdated")),
@@ -1078,14 +1091,14 @@ func (c *ccCollector) ingestProjects() {
 		}
 		before := len(c.snap.InstructionFiles)
 		if !isHome {
-			c.addInstruction("project", dir, filepath.Join(dir, "CLAUDE.md"), "CLAUDE.md")
-			c.addInstruction("project", dir, filepath.Join(dir, ".claude", "CLAUDE.md"), "CLAUDE.md")
-			c.addInstruction("project", dir, filepath.Join(dir, "CLAUDE.local.md"), "CLAUDE.md")
-			c.addInstruction("project", dir, filepath.Join(dir, "AGENTS.md"), "AGENTS.md")
-			c.addTree("project", dir, filepath.Join(dir, ".claude", "rules"), ".md", "rules", "")
-			c.addTree("project", dir, filepath.Join(dir, ".claude", "skills"), "SKILL.md", "skill", "")
-			c.addTree("project", dir, filepath.Join(dir, ".claude", "agents"), ".md", "subagent", "")
-			c.addTree("project", dir, filepath.Join(dir, ".claude", "commands"), ".md", "command", "")
+			c.addInstruction("project", dir, dir, filepath.Join(dir, "CLAUDE.md"), "CLAUDE.md")
+			c.addInstruction("project", dir, dir, filepath.Join(dir, ".claude", "CLAUDE.md"), "CLAUDE.md")
+			c.addInstruction("project", dir, dir, filepath.Join(dir, "CLAUDE.local.md"), "CLAUDE.md")
+			c.addInstruction("project", dir, dir, filepath.Join(dir, "AGENTS.md"), "AGENTS.md")
+			c.addTree("project", dir, dir, filepath.Join(dir, ".claude", "rules"), ".md", "rules", "")
+			c.addTree("project", dir, dir, filepath.Join(dir, ".claude", "skills"), "SKILL.md", "skill", "")
+			c.addTree("project", dir, dir, filepath.Join(dir, ".claude", "agents"), ".md", "subagent", "")
+			c.addTree("project", dir, dir, filepath.Join(dir, ".claude", "commands"), ".md", "command", "")
 		}
 		p.HasInstructionFile = len(c.snap.InstructionFiles) > before
 		c.snap.Projects = append(c.snap.Projects, p)
@@ -1095,15 +1108,61 @@ func (c *ccCollector) ingestProjects() {
 var remoteURLPattern = regexp.MustCompile(`(?m)^\s*url\s*=\s*(.+)$`)
 
 // gitRemoteFromConfig reads the first remote url from .git/config without exec.
+// The url can carry a credential (PAT clones are often
+// https://user:ghp_...@github.com/org/repo), and the field is published and
+// snapshotted, so it goes through the same scrubURL as every other URL.
 func gitRemoteFromConfig(p string) string {
 	b, err := readFileLimited(p)
 	if err != nil {
 		return ""
 	}
 	if m := remoteURLPattern.FindSubmatch(b); m != nil {
-		return strings.TrimSpace(string(m[1]))
+		u, _ := scrubURL(strings.TrimSpace(string(m[1])))
+		return u
 	}
 	return ""
+}
+
+// instructionEscapes reports whether an instruction file resolves outside the
+// tree it was discovered in.
+//
+// A repository (or a third-party plugin) can ship an instruction file as a
+// symlink to a file outside its own tree — .claude/CLAUDE.md -> ~/.ssh/id_rsa
+// — and reading it publishes that file's size, digest and parsed frontmatter
+// even though its content is never kept. Links that stay inside the tree are
+// normal and are read as before.
+//
+// root == "" means an operator-owned home or managed path: dotfile users
+// symlink ~/.claude/CLAUDE.md on purpose, so those are not containment-checked.
+func instructionEscapes(path, root string) (string, bool) {
+	if root == "" {
+		return "", false
+	}
+	// Make both absolute before resolving: EvalSymlinks keeps a relative
+	// input relative (`agentreach scan .` gives "." and "CLAUDE.md"), and
+	// resolving an absolute path also resolves the working directory's links.
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return "", false
+	}
+	real, err := filepath.EvalSymlinks(abs)
+	if err != nil {
+		// Unresolvable (missing, dangling, permission): let the read report
+		// the error rather than reporting a symlink escape.
+		return "", false
+	}
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		return "", false
+	}
+	realRoot, err := filepath.EvalSymlinks(absRoot)
+	if err != nil {
+		realRoot = filepath.Clean(absRoot)
+	}
+	if real == realRoot || strings.HasPrefix(real, realRoot+string(os.PathSeparator)) {
+		return "", false
+	}
+	return real, true
 }
 
 // gitRootOf walks up from path to the nearest directory containing .git.

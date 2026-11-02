@@ -21,6 +21,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - uses: somoore/steampipe-plugin-agentreach@v0.2.0
+      - uses: somoore/steampipe-plugin-agentreach@057afc7263afe24858ee56e56d9f898585b01daa # v0.2.0
         with:
           fail-on: auto # auto, classifier, prompt or never

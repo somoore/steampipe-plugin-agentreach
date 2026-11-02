@@ -375,6 +375,15 @@ func addCodexInstruction(snap *Snapshot, scope, projectDir, path string, git *cc
 // addCodexInstructionKind adds an AGENTS.md or skill file; plugin files are
 // third party.
 func addCodexInstructionKind(snap *Snapshot, scope, projectDir, path, kind, plugin string, pluginEnabled *bool, git *ccCollector, reviews *ReviewLedger) {
+	root := ""
+	if scope == "project" {
+		root = projectDir
+	}
+	if target, escaped := instructionEscapes(path, root); escaped {
+		snap.Errors = append(snap.Errors,
+			"instruction file "+path+" resolves outside "+root+" (to "+target+"); not read")
+		return
+	}
 	fi, err := os.Stat(path)
 	if err != nil || fi.IsDir() {
 		return

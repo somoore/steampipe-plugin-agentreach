@@ -4,6 +4,12 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+    # Wait for a release to age before opening a PR for it: a compromised or
+    # yanked version is usually pulled within days. Security updates ignore
+    # the cooldown, so an advisory still opens promptly.
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
     # Group all Go module bumps into one PR to keep the noise down; security
     # bumps still open promptly.
     groups:
@@ -14,3 +20,5 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7

@@ -17,6 +17,10 @@ import (
 // readable: opening a FIFO (a named pipe) blocks until a writer appears, so a
 // repository that ships one could otherwise hang the scan forever, and a
 // device or socket is not the file read the posture model describes.
+//
+// The decision to read comes from the descriptor's own stat, after a
+// non-blocking open, so a writer cannot swap a regular file for a FIFO
+// between the check and the read.
 func probeReadable(p string) *bool {
 	var ok bool
 	fi, err := os.Stat(p)
@@ -26,13 +30,21 @@ func probeReadable(p string) *bool {
 		_, err := os.ReadDir(p)
 		ok = err == nil
 	case fi.Mode().IsRegular():
-		f, err := os.Open(p)
-		if err == nil {
-			var one [1]byte
-			_, rerr := f.Read(one[:])
-			_ = f.Close()
-			ok = rerr == nil || rerr.Error() == "EOF"
+		// Re-check on the descriptor: the path may have become a FIFO since
+		// the Stat above.
+		f, err := openNonblock(p)
+		if err != nil {
+			break
 		}
+		dfi, err := f.Stat()
+		if err != nil || !dfi.Mode().IsRegular() {
+			_ = f.Close()
+			break
+		}
+		var one [1]byte
+		_, rerr := f.Read(one[:])
+		_ = f.Close()
+		ok = rerr == nil || rerr.Error() == "EOF"
 	}
 	return &ok
 }

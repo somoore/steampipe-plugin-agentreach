@@ -40,19 +40,24 @@ const maxFileBytes = 8 << 20
 
 // readFileLimited reads a regular file, refusing anything else (FIFO, device,
 // socket) and anything larger than maxFileBytes.
+//
+// The file is opened before it is classified, and the gate uses the
+// descriptor's own stat. A stat-then-open is a race: a writer in a repository
+// being scanned can swap a regular file for a FIFO between the two, past the
+// gate. openNonblock keeps that safe for the FIFO case.
 func readFileLimited(p string) ([]byte, error) {
-	fi, err := os.Stat(p)
+	f, err := openNonblock(p)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = f.Close() }()
+	fi, err := f.Stat()
 	if err != nil {
 		return nil, err
 	}
 	if !fi.Mode().IsRegular() {
 		return nil, fmt.Errorf("%s is not a regular file", p)
 	}
-	f, err := os.Open(p)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = f.Close() }()
 	b, err := io.ReadAll(io.LimitReader(f, maxFileBytes+1))
 	if err != nil {
 		return nil, err

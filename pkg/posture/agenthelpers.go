@@ -95,8 +95,18 @@ func mcpFromMap(agent, scope, src, projectDir, name string, sm map[string]any, t
 }
 
 // addAgentInstruction adds an instruction file with git provenance and the
-// review ledger, for any agent.
+// review ledger, for any agent. A project-scope file must resolve inside the
+// project: see instructionEscapes.
 func addAgentInstruction(snap *Snapshot, agent, scope, projectDir, path, kind string, git *ccCollector, reviews *ReviewLedger) {
+	root := ""
+	if scope == "project" {
+		root = projectDir
+	}
+	if target, escaped := instructionEscapes(path, root); escaped {
+		snap.Errors = append(snap.Errors,
+			"instruction file "+path+" resolves outside "+root+" (to "+target+"); not read")
+		return
+	}
 	fi, err := os.Stat(path)
 	if err != nil || fi.IsDir() {
 		return
