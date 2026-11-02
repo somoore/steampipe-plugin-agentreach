@@ -1138,15 +1138,26 @@ func instructionEscapes(path, root string) (string, bool) {
 	if root == "" {
 		return "", false
 	}
-	real, err := filepath.EvalSymlinks(path)
+	// Make both absolute before resolving: EvalSymlinks keeps a relative
+	// input relative (`agentreach scan .` gives "." and "CLAUDE.md"), and
+	// resolving an absolute path also resolves the working directory's links.
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return "", false
+	}
+	real, err := filepath.EvalSymlinks(abs)
 	if err != nil {
 		// Unresolvable (missing, dangling, permission): let the read report
 		// the error rather than reporting a symlink escape.
 		return "", false
 	}
-	realRoot, err := filepath.EvalSymlinks(root)
+	absRoot, err := filepath.Abs(root)
 	if err != nil {
-		realRoot = filepath.Clean(root)
+		return "", false
+	}
+	realRoot, err := filepath.EvalSymlinks(absRoot)
+	if err != nil {
+		realRoot = filepath.Clean(absRoot)
 	}
 	if real == realRoot || strings.HasPrefix(real, realRoot+string(os.PathSeparator)) {
 		return "", false

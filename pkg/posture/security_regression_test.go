@@ -231,3 +231,30 @@ func TestPluginManifestPathEscapeNotRead(t *testing.T) {
 		t.Errorf("no collect error for the escaped manifest; errors: %v", snap.Errors)
 	}
 }
+
+// `agentreach scan .` passes a relative project directory. A file inside it
+// must not be reported as escaping, whether its path is relative or absolute,
+// and a link out of it must still be caught.
+func TestInstructionEscapesRelativeRoot(t *testing.T) {
+	proj := t.TempDir()
+	if err := os.WriteFile(filepath.Join(proj, "CLAUDE.md"), []byte("# rules\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	outside := filepath.Join(t.TempDir(), "outside-secret")
+	if err := os.WriteFile(outside, []byte("x\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(proj, "AGENTS.md")); err != nil {
+		t.Skipf("symlink: %v", err)
+	}
+	t.Chdir(proj)
+
+	for _, p := range []string{"CLAUDE.md", filepath.Join(proj, "CLAUDE.md")} {
+		if target, escaped := instructionEscapes(p, "."); escaped {
+			t.Errorf("%s reported as escaping to %s", p, target)
+		}
+	}
+	if _, escaped := instructionEscapes("AGENTS.md", "."); !escaped {
+		t.Error("out-of-tree link under a relative root was not caught")
+	}
+}
