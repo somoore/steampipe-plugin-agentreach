@@ -124,6 +124,18 @@ jobs:
           npm install -g --ignore-scripts @anthropic-ai/sandbox-runtime@0.0.81
           srt --version
 
+      - name: srt diagnostics (temporary)
+        if: steps.diff.outputs.docs_only != 'true'
+        run: |
+          set +e
+          lsb_release -ds; uname -r; bwrap --version; command -v bwrap socat rg
+          sysctl kernel.apparmor_restrict_unprivileged_userns kernel.unprivileged_userns_clone user.max_user_namespaces
+          ls /etc/apparmor.d | grep -iE 'bwrap|unpriv' ; sudo aa-status 2>/dev/null | grep -iE 'bwrap|unpriv'
+          bwrap --ro-bind / / --unshare-net -- /bin/true; echo "bwrap rc=$?"
+          printf '{"network":{"allowedDomains":[],"deniedDomains":[]},"filesystem":{"denyRead":[],"allowWrite":[],"denyWrite":[]}}' > /tmp/s.json
+          srt --debug --settings /tmp/s.json -- /bin/bash -c 'echo inside-ok'; echo "srt rc=$?"
+          sudo dmesg | grep -iE 'apparmor.*DENIED' | tail -20
+
       - name: make test-srt
         if: steps.diff.outputs.docs_only != 'true'
         run: make test-srt SRT="$(command -v srt)"
