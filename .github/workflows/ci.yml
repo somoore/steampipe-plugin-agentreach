@@ -121,6 +121,13 @@ jobs:
           sudo apt-get install -y -qq bubblewrap socat ripgrep
           # Ubuntu 24.04 blocks unprivileged user namespaces, which bwrap needs.
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+          # Ubuntu 26.04 also ships the bwrap-userns-restrict AppArmor profile,
+          # which confines everything bwrap starts and denies the nested user
+          # namespace srt's apply-seccomp helper sets up ("write
+          # /proc/self/setgroups: Permission denied"). Unload it for this job.
+          if [ -e /etc/apparmor.d/bwrap-userns-restrict ]; then
+            sudo apparmor_parser -R /etc/apparmor.d/bwrap-userns-restrict
+          fi
           npm install -g --ignore-scripts @anthropic-ai/sandbox-runtime@0.0.81
           srt --version
 
